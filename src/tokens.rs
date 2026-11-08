@@ -1,4 +1,4 @@
-//! Design tokens from `DESIGN.md` ("The Quiet Frame"). Sizes are egui points.
+//! Design tokens from [jvid's design specification](https://github.com/jarradbanks/jvid/blob/main/DESIGN.md) ("The Quiet Frame"). Sizes are egui points.
 
 use egui::Color32;
 

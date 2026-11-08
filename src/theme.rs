@@ -105,6 +105,11 @@ pub fn icon_font() -> FontId {
     FontId::new(size::ICON, FontFamily::Name("icons".into()))
 }
 
+/// Bundled Inter faces, also used by consumers' text renderers.
+pub static INTER_REGULAR: &[u8] = include_bytes!("../assets/Inter-Regular.ttf");
+pub static INTER_MEDIUM: &[u8] = include_bytes!("../assets/Inter-Medium.ttf");
+pub static INTER_SEMIBOLD: &[u8] = include_bytes!("../assets/Inter-SemiBold.ttf");
+
 /// Each CJK language's Noto Sans CJK Regular, subset to its common characters and catalogs by
 /// `assets/subset-cjk.py` and used for every weight. A `static`, not a `const`, so the binary
 /// links one copy however many crates use it (jvid-app hands it to jvid-render's titles). Loaded only while its language is active,
@@ -130,12 +135,9 @@ pub fn fonts(lang: &str) -> FontDefinitions {
     let mut fonts = FontDefinitions::empty();
     let cjk = CJK_FACES.iter().find(|(l, _)| *l == lang);
     let faces: [(&str, &'static [u8]); 5] = [
-        ("inter", include_bytes!("../assets/Inter-Regular.ttf")),
-        ("inter-medium", include_bytes!("../assets/Inter-Medium.ttf")),
-        (
-            "inter-semibold",
-            include_bytes!("../assets/Inter-SemiBold.ttf"),
-        ),
+        ("inter", INTER_REGULAR),
+        ("inter-medium", INTER_MEDIUM),
+        ("inter-semibold", INTER_SEMIBOLD),
         ("lucide", include_bytes!("../assets/lucide-subset.ttf")),
         (
             "cjk-names",

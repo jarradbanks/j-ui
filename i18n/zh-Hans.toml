@@ -1,4 +1,4 @@
-# suite-ui strings, Chinese (Simplified). Keep keys and {placeholders} in step with en.toml.
+# j-ui strings, Chinese (Simplified). Keep keys and {placeholders} in step with en.toml.
 
 [language]
 name = "简体中文"

@@ -3,9 +3,9 @@
 
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use suite_ui::dialog::Dialog;
-use suite_ui::test_support as common;
-use suite_ui::widgets::ButtonKind;
+use j_ui::dialog::Dialog;
+use j_ui::test_support as common;
+use j_ui::widgets::ButtonKind;
 
 #[test]
 fn short_dialog_hugs_content() {
@@ -41,7 +41,7 @@ fn short_dialog_hugs_content() {
     }
     let rect = harness
         .ctx
-        .memory(|m| m.area_rect(egui::Id::new("suite_ui_dialog")))
+        .memory(|m| m.area_rect(egui::Id::new("j_ui_dialog")))
         .expect("dialog area");
     assert!(rect.height() < 200.0, "dialog is {} px high", rect.height());
     let body = harness.get_by_label("Save changes before closing?").rect();
@@ -111,8 +111,8 @@ fn switching_to_a_long_dialog_settles_the_footer_and_preserves_dismissal() {
 
 #[test]
 fn footer_fits_content_aligns_right_and_wraps_in_reading_order() {
-    use suite_ui::dialog::action_footer;
-    use suite_ui::widgets::Button;
+    use j_ui::dialog::action_footer;
+    use j_ui::widgets::Button;
 
     for scale in [1.0, 1.5, 2.0] {
         for width in [160.0, 240.0, 460.0] {
@@ -180,8 +180,8 @@ fn footer_fits_content_aligns_right_and_wraps_in_reading_order() {
 
 #[test]
 fn footer_keyboard_order_and_confirm_default_are_preserved() {
-    use suite_ui::dialog::action_footer;
-    use suite_ui::widgets::Button;
+    use j_ui::dialog::action_footer;
+    use j_ui::widgets::Button;
     let mut fresh = true;
     let mut h = Harness::builder().build_ui_state(
         move |ui, ids: &mut Vec<egui::Id>| {
@@ -247,8 +247,8 @@ fn footer_keyboard_order_and_confirm_default_are_preserved() {
 
 #[test]
 fn wrapping_a_footer_preserves_keyboard_focus() {
-    use suite_ui::dialog::action_footer;
-    use suite_ui::widgets::Button;
+    use j_ui::dialog::action_footer;
+    use j_ui::widgets::Button;
     let mut fresh = true;
     let mut h = Harness::builder().build_ui_state(
         move |ui, (width, ids): &mut (f32, Vec<egui::Id>)| {
@@ -281,8 +281,8 @@ fn wrapping_a_footer_preserves_keyboard_focus() {
 
 #[test]
 fn measuring_a_footer_does_not_duplicate_accessible_actions() {
-    use suite_ui::dialog::action_footer;
-    use suite_ui::widgets::Button;
+    use j_ui::dialog::action_footer;
+    use j_ui::widgets::Button;
     let mut fresh = true;
     let mut h = Harness::builder().build_ui(move |ui| {
         if common::install_theme(ui, &mut fresh) {

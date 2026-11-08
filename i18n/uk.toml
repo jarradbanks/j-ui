@@ -1,4 +1,4 @@
-# suite-ui strings, Ukrainian. Keep keys and {placeholders} in step with en.toml.
+# j-ui strings, Ukrainian. Keep keys and {placeholders} in step with en.toml.
 # Ukrainian labels use sentence case, not English Title Case. Terms follow docs/i18n/uk.md.
 
 [language]

@@ -1,4 +1,4 @@
-# suite-ui strings, Spanish. Keep keys and {placeholders} in step with en.toml.
+# j-ui strings, Spanish. Keep keys and {placeholders} in step with en.toml.
 
 [language]
 name = "Español"

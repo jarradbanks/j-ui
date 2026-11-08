@@ -1,4 +1,4 @@
-# suite-ui strings, Russian. Keep keys and {placeholders} in step with en.toml.
+# j-ui strings, Russian. Keep keys and {placeholders} in step with en.toml.
 # Russian labels use sentence case, not English Title Case. Terms follow docs/i18n/ru.md.
 
 [language]

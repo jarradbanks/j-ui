@@ -2,9 +2,9 @@
 use egui::{Key, Rect, Sense, UiBuilder, pos2, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use suite_ui::empty_state::EmptyState;
-use suite_ui::test_support::install_theme;
-use suite_ui::theme::icon;
+use j_ui::empty_state::EmptyState;
+use j_ui::test_support::install_theme;
+use j_ui::theme::icon;
 
 struct State {
     body: Rect,
@@ -158,7 +158,7 @@ fn unbounded_parent_uses_the_finite_visible_body() {
 
 #[test]
 fn readable_theme_inks_and_type_sizes_keep_the_viewer_neutral() {
-    use suite_ui::themes;
+    use j_ui::themes;
     for palette in [themes::DARK, themes::LIGHT, themes::HIGH_CONTRAST] {
         for viewer in [false, true] {
             let mut fresh = true;

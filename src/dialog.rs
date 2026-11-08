@@ -117,7 +117,7 @@ impl Dialog<'_> {
     /// Draws the dialog; the index of the button picked this frame, if any.
     pub fn show(&self, ctx: &Context) -> Option<usize> {
         let mut picked = None;
-        let id = Id::new("suite_ui_dialog");
+        let id = Id::new("j_ui_dialog");
         let previous_rect = ctx.memory(|m| m.area_rect(id));
         let width = if self.long { 640.0 } else { 360.0 };
         let modal = modal(ctx, id, self.title, width, |ui| {

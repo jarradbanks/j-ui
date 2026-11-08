@@ -1,13 +1,13 @@
 //! DESIGN.md Layout > Checks for the panel frame, 32px header and tabs, measured on
 //! rendered pixels at 100% and 150% scale. Headless wgpu on any Vulkan driver;
-//! `suite_ui::test_support::gpu()` picks Mesa lavapipe when installed (see CONTRIBUTING.md).
+//! `j_ui::test_support::gpu()` picks Mesa lavapipe when installed (see README.md).
 
-use suite_ui::test_support as common;
+use j_ui::test_support as common;
 
 use egui::Color32;
 use egui_kittest::Harness;
-use suite_ui::panel::Panel;
-use suite_ui::tokens::{color, size, space};
+use j_ui::panel::Panel;
+use j_ui::tokens::{color, size, space};
 
 const SCALES: [f32; 2] = [1.0, 1.5];
 /// The panel's top-left corner and size, in points.
@@ -276,7 +276,7 @@ fn popup_border_is_one_physical_pixel() {
 #[test]
 fn a_translucent_swatch_shows_the_checkerboard_and_an_opaque_one_is_solid() {
     use egui_kittest::kittest::Queryable;
-    use suite_ui::widgets::ColorField;
+    use j_ui::widgets::ColorField;
     if !common::gpu() {
         return;
     }
@@ -314,8 +314,8 @@ fn a_translucent_swatch_shows_the_checkerboard_and_an_opaque_one_is_solid() {
 #[test]
 fn icon_buttons_centre_their_glyphs_ink() {
     use egui_kittest::kittest::Queryable;
-    use suite_ui::theme::icon;
-    use suite_ui::widgets::Button;
+    use j_ui::theme::icon;
+    use j_ui::widgets::Button;
     if !common::gpu() {
         return;
     }

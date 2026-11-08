@@ -1,4 +1,4 @@
-# suite-ui strings, Norwegian Bokmål. Keep keys and {placeholders} in step with en.toml.
+# j-ui strings, Norwegian Bokmål. Keep keys and {placeholders} in step with en.toml.
 
 [language]
 name = "Norsk bokmål"

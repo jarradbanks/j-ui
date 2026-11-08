@@ -378,7 +378,7 @@ mod tests {
 
     #[test]
     fn file_change_reloads_without_restart() {
-        let dir = std::env::temp_dir().join(format!("suite-ui-theme-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("j-ui-theme-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("mine.toml");
         std::fs::write(&path, "panel = \"#102030\"").unwrap();
@@ -419,7 +419,7 @@ mod tests {
 
     #[test]
     fn folder_themes_list_after_the_built_ins() {
-        let dir = std::env::temp_dir().join(format!("suite-ui-choices-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("j-ui-choices-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         install_bundled(&dir).unwrap();
         std::fs::write(dir.join("nord-night.toml"), "panel = \"#2E3440\"").unwrap();
@@ -462,8 +462,7 @@ mod tests {
     fn broken_theme_on_first_load_falls_back_to_dark() {
         let ctx = Context::default();
         apply(&ctx, &LIGHT);
-        let path =
-            std::env::temp_dir().join(format!("suite-ui-broken-{}.toml", std::process::id()));
+        let path = std::env::temp_dir().join(format!("j-ui-broken-{}.toml", std::process::id()));
         std::fs::write(&path, "panel = 3").unwrap();
         let mut t = LiveTheme::new(path.to_str().unwrap());
         assert!(t.poll(&ctx).is_some());

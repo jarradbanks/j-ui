@@ -4,7 +4,7 @@
 //! embedded into a [`Catalog`] static and read through that crate's `tr!` macro.
 //! [`set_language`] switches every catalog at once; egui redraws from the catalogs each frame,
 //! so a switch shows on the next frame. Text missing from a language falls back to English,
-//! then to the key itself. See docs/translating.md.
+//! then to the key itself. See [the translation guide](https://github.com/jarradbanks/jvid/blob/main/docs/translating.md).
 
 use std::collections::HashMap;
 use std::fmt::Display;
@@ -270,7 +270,7 @@ impl Catalog {
 const PLURAL_FORMS: [&str; 4] = [".one", ".few", ".many", ".other"];
 
 /// The CLDR cardinal category of a whole number in a shipped language: `one`, `few`, `many`
-/// or `other`. From the CLDR chart's integer conditions (`v = 0`), linked in docs/translating.md.
+/// or `other`. From the CLDR chart's integer conditions (`v = 0`), linked in the translation guide.
 pub fn plural_category(lang: &str, n: u64) -> &'static str {
     let (i10, i100) = (n % 10, n % 100);
     match lang {
@@ -372,7 +372,7 @@ pub const fn verbatim(text: &'static str) -> &'static str {
 /// A text looked up each time it's shown, so a `const` table of them follows the language.
 pub type Label = fn() -> &'static str;
 
-/// suite-ui's own strings.
+/// j-ui's own strings.
 pub static CATALOG: Catalog = Catalog::new([
     include_str!("../i18n/en.toml"),
     include_str!("../i18n/es.toml"),

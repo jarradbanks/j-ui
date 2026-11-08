@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Subsets Noto Sans CJK to each language's common characters plus what jvid's catalogs use.
+"""Subsets Noto Sans CJK to each language's common characters plus what the kit's catalogs use.
 
     pip install fonttools==4.65.0
-    python3 crates/suite-ui/assets/subset-cjk.py [ja zh-Hans ko]
+    python3 assets/subset-cjk.py [ja zh-Hans ko]
 
 Downloads the pinned Noto Sans CJK Regular faces into a cache folder (once), then writes, next
 to this script, NotoSansCJK-<code>.otf with that language's common set (COMMON) and every
-character of its three catalogs, and NotoSansCJK-names.otf with just the language names the
+character of its catalogs, and NotoSansCJK-names.otf with just the language names the
 Settings picker lists. Equal characters give equal bytes, and a file whose bytes wouldn't change
-is left untouched, so a catalog edit in common characters changes no font. Only these outputs are committed; jvid itself never downloads
-anything. Each language face must stay within 1 MB (docs/translating.md, Fonts and binary size).
+is left untouched, so a catalog edit in common characters changes no font. Only these outputs are committed; the kit itself never downloads
+anything. Each language face must stay within 1 MB.
 """
 
 import os
@@ -35,7 +35,10 @@ NAMES = "日本語简体中文한국어"
 BUDGET = 1_000_000
 
 HERE = Path(__file__).resolve().parent
-CRATES = HERE.parent.parent
+ROOT = HERE.parent
+# Preserve the exact coverage inherited from jvid without requiring its checkout.
+# These characters were outside the national common sets and the kit/gallery catalogs.
+EXTRA = {"ja": "–—", "zh-Hans": "–—•浏渲珀琥阈", "ko": "–—"}
 CACHE = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "jvid-fonts"
 
 
@@ -51,8 +54,8 @@ def source(code):
 
 def catalog_text(code):
     """Every non-ASCII character of the language's catalogs (Inter draws ASCII)."""
-    dirs = ["jvid-app/i18n", "suite-ui/i18n", "suite-ui/i18n/gallery"]
-    text = "".join((CRATES / d / f"{code}.toml").read_text(encoding="utf-8") for d in dirs)
+    dirs = ["i18n", "i18n/gallery"]
+    text = "".join((ROOT / d / f"{code}.toml").read_text(encoding="utf-8") for d in dirs) + EXTRA[code]
     return sorted({c for c in text if ord(c) > 0x7F and not c.isspace()})
 
 

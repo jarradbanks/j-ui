@@ -8,8 +8,8 @@ mod gallery;
 use std::sync::{Mutex, MutexGuard};
 
 use egui_kittest::kittest::Queryable;
-use suite_ui::i18n::{self, CATALOG, Catalog};
-use suite_ui::test_support as common;
+use j_ui::i18n::{self, CATALOG, Catalog};
+use j_ui::test_support as common;
 
 static LOCK: Mutex<()> = Mutex::new(());
 
@@ -28,7 +28,7 @@ impl Drop for Switched {
     }
 }
 
-static TEST: Catalog = Catalog::new(suite_ui::test_support::en_es(
+static TEST: Catalog = Catalog::new(j_ui::test_support::en_es(
     "greet = \"Hi {name}\"\nonly_en = \"English only\"\n[clips]\none = \"{count} clip\"\nother = \"{count} clips\"\n[tracks]\none = \"{count} track\"\nother = \"{count} tracks\"\n",
     "greet = \"Hola {name}\"\n[clips]\none = \"{count} clip\"\nother = \"{count} clips\"\nmany = \"{count} de clips\"\n[tracks]\none = \"{count} pista\"\nother = \"{count} pistas\"\n",
 ));
@@ -49,7 +49,7 @@ fn widget_strings_follow_a_live_switch() {
     assert_eq!(CATALOG.tr("panel.more_tabs"), "Más pestañas");
     assert_eq!(CATALOG.tr("input.search"), "Buscar");
     assert_eq!(
-        suite_ui::tr!(CATALOG, "theme.bad_color", value = "#FFF"),
+        j_ui::tr!(CATALOG, "theme.bad_color", value = "#FFF"),
         "`#FFF` no es #RRGGBB"
     );
     i18n::set_language("en");
@@ -73,26 +73,26 @@ fn missing_keys_and_placeholders_stay_readable() {
     let _es = switch("es");
     assert_eq!(TEST.tr("only_en"), "English only");
     assert_eq!(TEST.tr("no.such_key"), "no.such_key");
-    assert_eq!(suite_ui::tr!(TEST, "greet", name = "Ana"), "Hola Ana");
+    assert_eq!(j_ui::tr!(TEST, "greet", name = "Ana"), "Hola Ana");
     // A missing argument keeps its placeholder; an unknown one is ignored.
     assert_eq!(TEST.format("greet", &[]), "Hola {name}");
-    assert_eq!(suite_ui::tr!(TEST, "greet", nmae = "Ana"), "Hola {name}");
+    assert_eq!(j_ui::tr!(TEST, "greet", nmae = "Ana"), "Hola {name}");
 }
 
 #[test]
 fn plurals_use_each_languages_rule() {
     let _es = switch("es");
-    let clips = |n| suite_ui::trn!(TEST, "clips", n);
+    let clips = |n| j_ui::trn!(TEST, "clips", n);
     assert_eq!(clips(1), "1 clip");
     assert_eq!(clips(0), "0 clips");
     assert_eq!(clips(1_000_000), "1000000 de clips");
     // Without a `many` form, `other` stands in.
-    assert_eq!(suite_ui::trn!(TEST, "tracks", 1_000_000), "1000000 pistas");
-    assert_eq!(suite_ui::trn!(TEST, "tracks", 1), "1 pista");
+    assert_eq!(j_ui::trn!(TEST, "tracks", 1_000_000), "1000000 pistas");
+    assert_eq!(j_ui::trn!(TEST, "tracks", 1), "1 pista");
     i18n::set_language("en");
     assert_eq!(clips(1_000_000), "1000000 clips");
     assert_eq!(clips(0), "0 clips");
-    assert_eq!(suite_ui::trn!(TEST, "no_such", 2), "no_such");
+    assert_eq!(j_ui::trn!(TEST, "no_such", 2), "no_such");
 }
 
 #[test]
@@ -190,8 +190,8 @@ fn polish_russian_and_their_neighbours_have_glyphs() {
 fn japanese_chrome_uses_its_face_only_while_active_content_keeps_all_scripts() {
     let _en = switch("en");
     let ctx = egui::Context::default();
-    suite_ui::theme::install(&ctx);
-    let ja = suite_ui::theme::cjk_face("ja");
+    j_ui::theme::install(&ctx);
+    let ja = j_ui::theme::cjk_face("ja");
     // A switch shows from the next pass, so run two.
     let loaded = |ctx: &egui::Context| {
         for _ in 0..2 {
@@ -201,9 +201,9 @@ fn japanese_chrome_uses_its_face_only_while_active_content_keeps_all_scripts() {
         }
         ctx.fonts(|f| {
             let definitions = f.definitions();
-            let content = &definitions.families[&suite_ui::theme::content().family];
-            for (locale, _) in suite_ui::theme::CJK_FACES {
-                assert!(content.contains(&suite_ui::theme::cjk_face(locale)));
+            let content = &definitions.families[&j_ui::theme::content().family];
+            for (locale, _) in j_ui::theme::CJK_FACES {
+                assert!(content.contains(&j_ui::theme::cjk_face(locale)));
             }
             definitions.families[&egui::FontFamily::Proportional].contains(&ja)
         })
@@ -219,7 +219,7 @@ fn japanese_chrome_uses_its_face_only_while_active_content_keeps_all_scripts() {
 
 #[test]
 fn cjk_faces_stay_within_budget() {
-    for (lang, face) in suite_ui::theme::CJK_FACES {
+    for (lang, face) in j_ui::theme::CJK_FACES {
         assert!(face.len() <= 1_000_000, "{lang} is {} bytes", face.len());
     }
 }

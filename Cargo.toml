@@ -1,11 +1,40 @@
+[workspace]
+resolver = "3"
+members = ["."]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/jarradbanks/j-ui"
+publish = false
+
+[workspace.dependencies]
+egui = "=0.36.2"
+eframe = { version = "=0.36.2", default-features = false, features = ["default_fonts", "wgpu", "wayland", "x11"] }
+egui_kittest = { version = "=0.36.2", features = ["wgpu", "snapshot"] }
+serde = { version = "1", features = ["derive"] }
+toml = "1"
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+dbg_macro = "warn"
+todo = "warn"
+undocumented_unsafe_blocks = "warn"
+
 [package]
-name = "suite-ui"
-description = "Shared theme, widgets and keybinding system for the jvid suite of apps."
+name = "j-ui"
+description = "Shared egui themes, widgets and localisation for the j suite of apps."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 publish.workspace = true
+
+[lib]
+name = "j_ui"
 
 [lints]
 workspace = true
@@ -21,6 +50,11 @@ toml.workspace = true
 test-support = []
 
 [dev-dependencies]
-suite-ui = { path = ".", features = ["test-support"] }
+j-ui = { path = ".", features = ["test-support"] }
 eframe.workspace = true
 egui_kittest.workspace = true
+syn = { version = "2.0.119", features = ["full", "visit-mut"] }
+proc-macro2 = { version = "1.0.107", default-features = false }
+
+[profile.dev.package."*"]
+opt-level = 2

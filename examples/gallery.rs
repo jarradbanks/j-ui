@@ -1,16 +1,16 @@
-//! Every suite-ui widget in every state: `cargo run -p suite-ui --example gallery`.
+//! Every j-ui widget in every state: `cargo run -p j-ui --example gallery`.
 
 use eframe::egui;
-use suite_ui::i18n::{self, Catalog, verbatim};
-use suite_ui::panel::Panel;
-use suite_ui::theme::{self, icon};
-use suite_ui::tokens::{color, size, space};
-use suite_ui::widgets::{
+use j_ui::i18n::{self, Catalog, verbatim};
+use j_ui::panel::Panel;
+use j_ui::theme::{self, icon};
+use j_ui::tokens::{color, size, space};
+use j_ui::widgets::{
     Button, ButtonKind, Checkbox, ColorField, DragField, Dropdown, KeyButton, Keyed, SectionHeader,
     Segmented, Slider, State, Swatches, TextInput, Timecode,
 };
 
-/// The gallery's demo labels; the widgets' own strings are in suite-ui's catalog.
+/// The gallery's demo labels; the widgets' own strings are in j-ui's catalog.
 pub static CATALOG: Catalog = Catalog::new([
     include_str!("../i18n/gallery/en.toml"),
     include_str!("../i18n/gallery/es.toml"),
@@ -35,14 +35,14 @@ pub static CATALOG: Catalog = Catalog::new([
 
 macro_rules! tr {
     ($($args:tt)+) => {
-        suite_ui::tr!(CATALOG, $($args)+)
+        j_ui::tr!(CATALOG, $($args)+)
     };
 }
 
 fn main() -> eframe::Result {
     i18n::set_language(i18n::resolve(i18n::SYSTEM));
     eframe::run_native(
-        verbatim("suite-ui gallery"),
+        verbatim("j-ui gallery"),
         eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default().with_inner_size([1280.0, 860.0]),
             ..Default::default()

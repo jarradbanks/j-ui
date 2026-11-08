@@ -4,9 +4,9 @@
 #[path = "../examples/gallery.rs"]
 mod gallery;
 
-use suite_ui::test_support as common;
+use j_ui::test_support as common;
 
-use suite_ui::tokens::radius;
+use j_ui::tokens::radius;
 
 #[test]
 fn gallery_snapshot() {

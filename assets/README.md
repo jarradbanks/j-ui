@@ -5,7 +5,6 @@
 | `Inter-Regular.ttf`, `Inter-Medium.ttf`, `Inter-SemiBold.ttf` | [Inter 4.1](https://github.com/rsms/inter/releases/tag/v4.1), `extras/ttf/` | SIL OFL 1.1, see `Inter-LICENSE.txt` |
 | `NotoSansCJK-ja.otf`, `NotoSansCJK-zh-Hans.otf`, `NotoSansCJK-ko.otf`, `NotoSansCJK-names.otf` | [Noto Sans CJK 2.004](https://github.com/notofonts/noto-cjk/tree/Sans2.004/Sans/OTF), the JP, SC and KR Regular faces, subset by `subset-cjk.py` | SIL OFL 1.1, see `NotoSansCJK-LICENSE.txt` |
 | `lucide-subset.ttf` | [lucide-static 0.460.0](https://www.npmjs.com/package/lucide-static/v/0.460.0), `font/lucide.ttf` | ISC, see `Lucide-LICENSE.txt` |
-| `docs/prototypes/v3/sample.jpg`, bundled by `jvid-render` (`thumb.rs`) as the thumbnail fallback frame | A 480×270 frame of the project owner's own footage, added in 0ff9086 | The owner's; ships under the repository license |
 
 egui can't switch OpenType features on, so tabular figures are frozen into Inter's default glyphs, and both fonts are subset to what the suite uses. Inter keeps Basic Latin, Latin-1, Latin Extended-A (Polish, Czech, Turkish, ..), basic Cyrillic plus Ukrainian Ґ, and the dashes, quotes and symbols the catalogs use:
 
@@ -26,11 +25,11 @@ pyftsubset lucide.ttf --unicodes="U+E071,U+E073,U+E155,U+E070,U+E1B2,U+E141,U+E0
 
 To add an icon, look up its code point in lucide-static's `font/info.json`, add it to the last command, and add a constant to `icon` in `src/theme.rs`.
 
-The CJK faces hold each language's common characters plus any others their language's catalogs use (docs/translating.md, Fonts and binary size), so most catalog edits leave them unchanged. `subset-cjk.py` downloads the pinned source faces into `~/.cache/jvid-fonts` the first time (about 16 MB each), subsets them, leaves a face untouched when its bytes wouldn't change and fails if a face passes the 1 MB budget:
+The CJK faces hold each language's common characters plus any others their language's catalogs use, plus the small legacy coverage set in the script, so most catalog edits leave them unchanged. `subset-cjk.py` downloads the pinned source faces into `~/.cache/jvid-fonts` the first time (about 16 MB each), subsets them, leaves a face untouched when its bytes wouldn't change and fails if a face passes the 1 MB budget:
 
 ```sh
 pip install fonttools==4.65.0  # the version the i18n workflow pins
-python3 crates/suite-ui/assets/subset-cjk.py ja        # or zh-Hans, ko; no argument does all three
+python3 assets/subset-cjk.py ja        # or zh-Hans, ko; no argument does all three
 ```
 
 `NotoSansCJK-names.otf` is just 日本語, 简体中文 and 한국어, which the Settings picker shows in every language; the script rebuilds it each run.
