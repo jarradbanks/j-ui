@@ -25,6 +25,11 @@ overflow = "Le schede sotto i 64 px passano nel menu a freccia."
 type_and_colour = "Tipografia e colore"
 
 [row]
+toggle = "Interruttore"
+pills = "Opzioni"
+breadcrumb = "Percorso"
+selection = "Selezione"
+
 primary = "Primario"
 secondary = "Secondario"
 ghost = "Trasparente"

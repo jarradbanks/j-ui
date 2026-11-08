@@ -25,6 +25,11 @@ overflow = "Abas com menos de 64px vão para o menu da seta."
 type_and_colour = "Tipografia e cor"
 
 [row]
+toggle = "Interruptor"
+pills = "Opções"
+breadcrumb = "Caminho"
+selection = "Seleção"
+
 primary = "Primário"
 secondary = "Secundário"
 ghost = "Fantasma"

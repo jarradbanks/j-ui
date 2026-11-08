@@ -46,6 +46,9 @@ serde.workspace = true
 sys-locale = "0.3.2"
 toml.workspace = true
 
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62", features = ["Win32_UI_WindowsAndMessaging", "Win32_Graphics_Gdi"] }
+
 [features]
 # Headless GPU setup for egui_kittest tests; dev-dependency use only.
 test-support = []

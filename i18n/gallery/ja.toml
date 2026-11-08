@@ -25,6 +25,11 @@ overflow = "64px 未満のタブはシェブロンメニューに移動します
 type_and_colour = "文字と色"
 
 [row]
+toggle = "スイッチ"
+pills = "選択肢"
+breadcrumb = "パンくずリスト"
+selection = "選択"
+
 primary = "プライマリ"
 secondary = "セカンダリ"
 ghost = "ゴースト"

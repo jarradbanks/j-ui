@@ -25,6 +25,11 @@ overflow = "Вкладки шириной меньше 64 пикс. уходят
 type_and_colour = "Шрифты и цвета"
 
 [row]
+toggle = "Переключатель"
+pills = "Варианты"
+breadcrumb = "Путь"
+selection = "Выбор"
+
 primary = "Основная"
 secondary = "Вторичная"
 ghost = "Призрачная"

@@ -25,6 +25,11 @@ overflow = "宽度小于 64px 的标签页会移入 V 形菜单。"
 type_and_colour = "文字与颜色"
 
 [row]
+toggle = "开关"
+pills = "选项"
+breadcrumb = "面包屑导航"
+selection = "选择"
+
 primary = "主要"
 secondary = "次要"
 ghost = "幽灵"

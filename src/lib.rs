@@ -6,6 +6,7 @@
 pub mod dialog;
 pub mod empty_state;
 pub mod i18n;
+pub mod motion;
 pub mod panel;
 #[cfg(feature = "test-support")]
 pub mod test_support;

@@ -27,6 +27,11 @@ type_and_colour = "Type and Colour"
 
 # Row heads: the widget kinds.
 [row]
+toggle = "Switch"
+pills = "Pills"
+breadcrumb = "Breadcrumb"
+selection = "Selection"
+
 primary = "Primary"
 secondary = "Secondary"
 ghost = "Ghost"

@@ -25,6 +25,11 @@ overflow = "Les pestanyes de menys de 64 px passen al menú desplegable."
 type_and_colour = "Tipografia i color"
 
 [row]
+toggle = "Interruptor"
+pills = "Opcions"
+breadcrumb = "Ruta"
+selection = "Selecció"
+
 primary = "Principal"
 secondary = "Secundari"
 ghost = "Fantasma"

@@ -17,6 +17,11 @@ use crate::theme::{self, hairline, icon};
 use crate::tokens::{color, radius, size, space};
 use crate::tr;
 
+mod selection;
+pub use selection::{
+    Breadcrumb, SELECTION_DIAMETER, SELECTION_TILE, SelectionCheckbox, Toggle, paint_selection,
+};
+
 /// The interaction state a control is drawn in.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum State {
@@ -480,6 +485,8 @@ pub struct TextInput<'a> {
     width: f32,
     rows: usize,
     state: State,
+    height: f32,
+    clear_label: Option<&'a str>,
 }
 
 impl<'a> TextInput<'a> {
@@ -493,6 +500,8 @@ impl<'a> TextInput<'a> {
             width: 160.0,
             rows: 1,
             state: State::Live,
+            height: size::CONTROL,
+            clear_label: None,
         }
     }
 
@@ -531,6 +540,18 @@ impl<'a> TextInput<'a> {
         self
     }
 
+    /// Minimum single-line height; the text and clear button stay vertically centred.
+    pub fn height(mut self, height: f32) -> Self {
+        self.height = height.max(size::CONTROL);
+        self
+    }
+
+    /// Shows a clear button while the field contains text; `label` names the action.
+    pub fn clearable(mut self, label: &'a str) -> Self {
+        self.clear_label = Some(label);
+        self
+    }
+
     pub fn state(mut self, state: State) -> Self {
         self.state = state;
         self
@@ -544,13 +565,27 @@ impl Widget for TextInput<'_> {
             let extra = (self.rows - 1) as f32 * row;
             let (rect, outer) = allocate(
                 ui,
-                vec2(self.width, size::CONTROL + extra),
+                vec2(self.width, self.height + extra),
                 self.state,
                 Sense::hover(),
             );
             let frame = ui.painter().add(Shape::Noop);
             let x = paint_prefix(ui, rect, self.prefix, self.glyph);
-            let inner = Rect::from_x_y_ranges(x..=rect.right() - space::S8, rect.y_range());
+            let clear = self
+                .clear_label
+                .filter(|_| !self.text.is_empty())
+                .map(|label| {
+                    let side = (self.height - space::S8).min(size::CONTROL + space::S4);
+                    (
+                        Rect::from_center_size(
+                            rect.right_center() - vec2(side / 2.0 + space::S4, 0.0),
+                            Vec2::splat(side),
+                        ),
+                        label,
+                    )
+                });
+            let right = clear.map_or(rect.right() - space::S8, |(r, _)| r.left() - space::S4);
+            let inner = Rect::from_x_y_ranges(x..=right, rect.y_range());
             let disabled = self.state == State::Disabled || !ui.is_enabled();
             let ink = if disabled {
                 color::ink_4()
@@ -582,10 +617,35 @@ impl Widget for TextInput<'_> {
             });
             let mut response = edit.inner.union(outer);
             response.rect = rect;
+            ui.ctx().accesskit_node_builder(response.id, |node| {
+                node.set_bounds(egui::accesskit::Rect {
+                    x0: rect.min.x.into(),
+                    y0: rect.min.y.into(),
+                    x1: rect.max.x.into(),
+                    y1: rect.max.y.into(),
+                });
+            });
             let mut l = look(&response, self.state);
             l.hover |= self.state == State::Live && ui.rect_contains_pointer(rect);
             ui.painter()
                 .set(frame, field_frame(ui, rect, l, self.error.is_some()));
+            if let Some((clear, label)) = clear
+                && ui
+                    .put(clear, |ui: &mut Ui| {
+                        ui.add_enabled(
+                            !disabled,
+                            Button::icon(icon::X, label)
+                                .height(clear.height())
+                                .width(clear.width()),
+                        )
+                    })
+                    .on_hover_text(label)
+                    .clicked()
+            {
+                self.text.clear();
+                response.mark_changed();
+                response.request_focus();
+            }
             error_line(ui, self.error);
             response
         })
@@ -894,6 +954,90 @@ pub fn menu_place(field: Rect, bounds: Rect, wanted: f32) -> (RectAlign, f32) {
     }
 }
 
+/// A dropdown trigger for callers that own the popup contents.
+#[must_use = "add it with `ui.add(..)`"]
+pub struct Select<'a> {
+    current: &'a str,
+    width: f32,
+    height: f32,
+    glyph: Option<&'static str>,
+    state: State,
+    placeholder: bool,
+}
+
+impl<'a> Select<'a> {
+    pub fn new(current: &'a str) -> Self {
+        Self {
+            current,
+            width: 120.0,
+            height: size::CONTROL,
+            glyph: None,
+            state: State::Live,
+            placeholder: false,
+        }
+    }
+    pub fn width(mut self, width: f32) -> Self {
+        self.width = width;
+        self
+    }
+    pub fn height(mut self, height: f32) -> Self {
+        self.height = height.max(size::CONTROL);
+        self
+    }
+    pub fn with_icon(mut self, glyph: &'static str) -> Self {
+        self.glyph = Some(glyph);
+        self
+    }
+    pub fn state(mut self, state: State) -> Self {
+        self.state = state;
+        self
+    }
+
+    fn show(self, ui: &mut Ui) -> (Response, bool) {
+        let (rect, response) = allocate(
+            ui,
+            vec2(self.width, self.height),
+            self.state,
+            Sense::click(),
+        );
+        response.widget_info(|| {
+            WidgetInfo::labeled(WidgetType::ComboBox, response.enabled(), self.current)
+        });
+        let l = look(&response, self.state);
+        ui.painter().add(field_frame(ui, rect, l, false));
+        let ink = match () {
+            _ if l.disabled => color::ink_4(),
+            _ if self.placeholder => color::ink_2(),
+            _ => color::ink(),
+        };
+        let chevron = if l.disabled {
+            color::ink_4()
+        } else {
+            color::ink_2()
+        };
+        let chevron_x = rect.right() - space::S4 - size::ICON / 2.0;
+        let left = paint_prefix(ui, rect, None, self.glyph);
+        let room = chevron_x - size::ICON / 2.0 - space::S4 - left;
+        let text = fit_text(ui, self.current, theme::body(), ink, room);
+        let elided = text.elided;
+        paint_left(ui, left, rect.center().y, text, ink);
+        ui.painter().text(
+            pos2(chevron_x, rect.center().y),
+            Align2::CENTER_CENTER,
+            icon::CHEVRON_DOWN,
+            theme::icon_font(),
+            chevron,
+        );
+        (response, elided)
+    }
+}
+
+impl Widget for Select<'_> {
+    fn ui(self, ui: &mut Ui) -> Response {
+        self.show(ui).0
+    }
+}
+
 /// A field with a chevron that opens a menu of options. The menu is as wide as the field,
 /// stays inside the window (or [`Dropdown::bounds`]) and scrolls past that; a name too long
 /// for the field or a row ends in an ellipsis and shows in full on hover.
@@ -905,6 +1049,8 @@ pub struct Dropdown<'a> {
     state: State,
     bounds: Option<Rect>,
     placeholder: &'a str,
+    height: f32,
+    glyph: Option<&'static str>,
 }
 
 impl<'a> Dropdown<'a> {
@@ -916,6 +1062,8 @@ impl<'a> Dropdown<'a> {
             state: State::Live,
             bounds: None,
             placeholder: "",
+            height: size::CONTROL,
+            glyph: None,
         }
     }
 
@@ -928,6 +1076,16 @@ impl<'a> Dropdown<'a> {
 
     pub fn width(mut self, width: f32) -> Self {
         self.width = width;
+        self
+    }
+
+    pub fn height(mut self, height: f32) -> Self {
+        self.height = height.max(size::CONTROL);
+        self
+    }
+
+    pub fn with_icon(mut self, glyph: &'static str) -> Self {
+        self.glyph = Some(glyph);
         self
     }
 
@@ -946,39 +1104,18 @@ impl<'a> Dropdown<'a> {
 
 impl Widget for Dropdown<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let (rect, mut response) = allocate(
-            ui,
-            vec2(self.width, size::CONTROL),
-            self.state,
-            Sense::click(),
-        );
         let picked = self.options.get(*self.selected).copied();
         let current = picked.unwrap_or(self.placeholder);
-        response.widget_info(|| WidgetInfo::labeled(WidgetType::ComboBox, true, current));
-        let l = look(&response, self.state);
-        ui.painter().add(field_frame(ui, rect, l, false));
-        let ink = match () {
-            _ if l.disabled => color::ink_4(),
-            _ if picked.is_none() => color::ink_2(),
-            _ => color::ink(),
-        };
-        let chevron = if l.disabled {
-            color::ink_4()
-        } else {
-            color::ink_2()
-        };
-        let chevron_x = rect.right() - space::S4 - size::ICON / 2.0;
-        let room = chevron_x - size::ICON / 2.0 - space::S4 - (rect.left() + space::S8);
-        let text = fit_text(ui, current, theme::body(), ink, room);
-        let elided = text.elided;
-        paint_left(ui, rect.left() + space::S8, rect.center().y, text, ink);
-        ui.painter().text(
-            pos2(chevron_x, rect.center().y),
-            Align2::CENTER_CENTER,
-            icon::CHEVRON_DOWN,
-            theme::icon_font(),
-            chevron,
-        );
+        let (mut response, elided) = Select {
+            current,
+            width: self.width,
+            height: self.height,
+            glyph: self.glyph,
+            state: self.state,
+            placeholder: picked.is_none(),
+        }
+        .show(ui);
+        let rect = response.rect;
         let screen = ui.ctx().content_rect();
         let bounds = self.bounds.map_or(screen, |b| b.intersect(screen));
         let row = size::CONTROL + ui.spacing().item_spacing.y;
@@ -1080,6 +1217,10 @@ pub struct Segmented<'a> {
     state: State,
     off: &'a [Option<&'a str>],
     tips: &'a [Option<&'a str>],
+    height: f32,
+    width: Option<f32>,
+    pills: bool,
+    track: Option<Color32>,
 }
 
 impl<'a> Segmented<'a> {
@@ -1091,7 +1232,27 @@ impl<'a> Segmented<'a> {
             state: State::Live,
             off: &[],
             tips: &[],
+            height: size::CONTROL,
+            width: None,
+            pills: false,
+            track: None,
         }
+    }
+
+    pub fn height(mut self, height: f32) -> Self {
+        self.height = height.max(size::CONTROL);
+        self
+    }
+
+    /// Equal segments filling a fixed width; long labels elide within their segment.
+    pub fn width(mut self, width: f32) -> Self {
+        self.width = Some(width.max(0.0));
+        self
+    }
+
+    pub fn track(mut self, track: Color32) -> Self {
+        self.track = Some(track);
+        self
     }
 
     /// Icon segments: `glyphs` drawn in the icon font, each named by `names` in its tooltip.
@@ -1127,21 +1288,41 @@ impl Widget for Segmented<'_> {
             Some(_) => theme::icon_font(),
             None => theme::body_strong(),
         };
-        let pad = 2.0;
-        let widths: Vec<f32> = self
+        let pad = if self.pills { 4.0 } else { 2.0 };
+        let gap = if self.pills { 2.0 } else { 0.0 };
+        let mut widths: Vec<f32> = self
             .options
             .iter()
             .map(|o| match self.names {
                 Some(_) => size::SMALL_CONTROL,
-                None => (text_width(ui, o, &font) + 2.0 * space::S8).ceil(),
+                None => (text_width(ui, o, &font)
+                    + 2.0 * if self.pills { space::S12 } else { space::S8 })
+                .ceil(),
             })
             .collect();
-        let total = widths.iter().sum::<f32>() + 2.0 * pad;
+        let chrome = 2.0 * pad + gap * widths.len().saturating_sub(1) as f32;
+        let natural = widths.iter().sum::<f32>();
+        let total = self.width.unwrap_or(natural + chrome);
+        let total = if self.pills || self.width.is_some() {
+            total.min(ui.available_width())
+        } else {
+            total
+        };
+        if self.width.is_some() {
+            widths.fill(((total - chrome) / self.options.len().max(1) as f32).max(0.0));
+        } else if total < natural + chrome && natural > 0.0 {
+            for w in &mut widths {
+                *w *= ((total - chrome) / natural).max(0.0);
+            }
+        }
         let (rect, mut response) =
-            allocate(ui, vec2(total, size::CONTROL), self.state, Sense::hover());
+            allocate(ui, vec2(total, self.height), self.state, Sense::hover());
         let disabled = self.state == State::Disabled || !ui.is_enabled();
-        ui.painter()
-            .rect_filled(rect, CornerRadius::same(radius::CONTROL), color::field());
+        ui.painter().rect_filled(
+            rect,
+            CornerRadius::same(radius::CONTROL),
+            self.track.unwrap_or_else(color::field),
+        );
         if !disabled {
             ui.painter()
                 .add(border(ui, rect, radius::CONTROL, color::border()));
@@ -1150,7 +1331,7 @@ impl Widget for Segmented<'_> {
         let mut x = rect.left() + pad;
         for (i, (option, w)) in self.options.iter().zip(&widths).enumerate() {
             let seg = Rect::from_x_y_ranges(x..=x + w, rect.top() + pad..=rect.bottom() - pad);
-            x += w;
+            x += w + gap;
             let off = self.off.get(i).copied().flatten();
             let pinned = if Some(i) == first_unselected {
                 self.state
@@ -1186,8 +1367,10 @@ impl Widget for Segmented<'_> {
                 None => seg_response,
             };
             if seg_response.clicked() {
+                if *self.selected != i {
+                    response.mark_changed();
+                }
                 *self.selected = i;
-                response.mark_changed();
             }
             let l = look(&seg_response, pinned);
             let l = Look {
@@ -1209,18 +1392,63 @@ impl Widget for Segmented<'_> {
                 _ if l.hover => color::ink_2(),
                 _ => color::ink_3(),
             };
-            ui.painter().text(
-                seg.center(),
-                Align2::CENTER_CENTER,
-                *option,
-                font.clone(),
-                ink,
-            );
+            if self.pills || self.width.is_some() {
+                let text = fit_text(
+                    ui,
+                    option,
+                    font.clone(),
+                    ink,
+                    (seg.width() - space::S8).max(0.0),
+                );
+                let at = Align2::CENTER_CENTER
+                    .align_size_within_rect(text.size(), seg)
+                    .min;
+                ui.painter().galley(at, text, ink);
+            } else {
+                ui.painter().text(
+                    seg.center(),
+                    Align2::CENTER_CENTER,
+                    *option,
+                    font.clone(),
+                    ink,
+                );
+            }
             if l.focus {
                 ui.painter().add(focus_ring(seg, radius::SMALL));
             }
         }
         response
+    }
+}
+
+/// Content-sized pill choices with an inset selected tile.
+#[must_use = "add it with `ui.add(..)`"]
+pub struct Pills<'a>(Segmented<'a>);
+
+impl<'a> Pills<'a> {
+    pub fn new(selected: &'a mut usize, options: &'a [&'a str]) -> Self {
+        Self(Segmented {
+            pills: true,
+            ..Segmented::new(selected, options)
+        })
+    }
+    pub fn height(mut self, height: f32) -> Self {
+        self.0 = self.0.height(height);
+        self
+    }
+    pub fn track(mut self, track: Color32) -> Self {
+        self.0 = self.0.track(track);
+        self
+    }
+    pub fn state(mut self, state: State) -> Self {
+        self.0 = self.0.state(state);
+        self
+    }
+}
+
+impl Widget for Pills<'_> {
+    fn ui(self, ui: &mut Ui) -> Response {
+        self.0.ui(ui)
     }
 }
 

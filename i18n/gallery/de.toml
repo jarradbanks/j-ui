@@ -25,6 +25,11 @@ overflow = "Tabs unter 64 px wandern ins Chevron-Menü."
 type_and_colour = "Schrift und Farbe"
 
 [row]
+toggle = "Schalter"
+pills = "Optionen"
+breadcrumb = "Pfad"
+selection = "Auswahl"
+
 primary = "Primär"
 secondary = "Sekundär"
 ghost = "Ghost"

@@ -25,6 +25,11 @@ overflow = "Faner under 64px flyttes ind i menuen med vinkelpilen."
 type_and_colour = "Skrift og farve"
 
 [row]
+toggle = "Kontakt"
+pills = "Valg"
+breadcrumb = "Sti"
+selection = "Markering"
+
 primary = "Primær"
 secondary = "Sekundær"
 ghost = "Spøgelse"

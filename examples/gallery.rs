@@ -6,8 +6,9 @@ use j_ui::panel::Panel;
 use j_ui::theme::{self, icon};
 use j_ui::tokens::{color, size, space};
 use j_ui::widgets::{
-    Button, ButtonKind, Checkbox, ColorField, DragField, Dropdown, KeyButton, Keyed, SectionHeader,
-    Segmented, Slider, State, Swatches, TextInput, Timecode,
+    Breadcrumb, Button, ButtonKind, Checkbox, ColorField, DragField, Dropdown, KeyButton, Keyed,
+    Pills, SectionHeader, Segmented, SelectionCheckbox, Slider, State, Swatches, TextInput,
+    Timecode, Toggle, paint_selection,
 };
 
 /// The gallery's demo labels; the widgets' own strings are in j-ui's catalog.
@@ -69,12 +70,18 @@ pub struct Gallery {
     checked: bool,
     open: bool,
     frame: i64,
+    motion: bool,
+    mixed: bool,
+    parent: bool,
 }
 
 impl Gallery {
     pub fn new() -> Self {
         Self {
             open: true,
+            motion: true,
+            mixed: true,
+            parent: true,
             level: 0.5,
             colour: [0x2F, 0x6F, 0xEB, 0xFF],
             frame: 30 * 72 + 8,
@@ -121,7 +128,13 @@ pub fn gallery(ui: &mut egui::Ui, g: &mut Gallery) {
                         (icon::ELLIPSIS, tr!("panel.more")),
                     ])
                     .show(ui, |ui| {
-                        egui::ScrollArea::vertical().show(ui, |ui| states(ui, g));
+                        egui::ScrollArea::vertical().show(ui, |ui| {
+                            if g.tab == 1 {
+                                selection(ui, g);
+                            } else {
+                                states(ui, g);
+                            }
+                        });
                     });
                 g.tab = tab;
             });
@@ -383,4 +396,42 @@ fn type_and_colour(ui: &mut egui::Ui) {
                 });
         }
     });
+}
+
+/// Shared selection and reduced-motion examples live on the Effects tab.
+fn selection(ui: &mut egui::Ui, g: &mut Gallery) {
+    ui.add(Checkbox::new(&mut g.motion, tr!("demo.animate")));
+    j_ui::motion::set_enabled(ui.ctx(), g.motion);
+    ui.label(tr!("row.toggle"));
+    ui.add(Toggle::new(&mut g.checked, tr!("demo.live")));
+    ui.label(tr!("row.pills"));
+    ui.add(Pills::new(&mut g.segment, &[tr!("demo.fit"), tr!("demo.fill")]).height(36.0));
+    ui.label(tr!("row.breadcrumb"));
+    let title = if g.parent {
+        tr!("panel.source")
+    } else {
+        tr!("clip.title")
+    };
+    if ui
+        .add(Breadcrumb::new(tr!("demo.previous"), title).height(36.0))
+        .clicked()
+    {
+        g.parent = !g.parent;
+    }
+    ui.label(tr!("row.selection"));
+    if ui
+        .add(SelectionCheckbox::new(&mut g.checked, tr!("demo.snap")).mixed(g.mixed))
+        .changed()
+    {
+        g.mixed = false;
+    }
+    let (tile, _) = ui.allocate_exact_size(egui::Vec2::splat(20.0), egui::Sense::hover());
+    paint_selection(ui, tile, g.checked, g.mixed);
+    let t = j_ui::motion::toggle(ui.ctx(), ui.id().with("demo-motion"), g.checked);
+    let (track, _) = ui.allocate_exact_size(egui::vec2(160.0, 24.0), egui::Sense::hover());
+    ui.painter().circle_filled(
+        track.left_center() + egui::vec2(8.0 + 144.0 * t, 0.0),
+        8.0,
+        color::blue(),
+    );
 }
