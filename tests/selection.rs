@@ -66,21 +66,26 @@ fn switch_mouse_keyboard_and_disabled_input() {
 #[test]
 fn tall_search_clear_reports_change_and_returns_focus() {
     use j_ui::widgets::TextInput;
+    let mut fresh = true;
     let mut h = Harness::builder().build_ui_state(
-        |ui, state: &mut (String, bool)| {
+        move |ui, state: &mut (String, bool)| {
+            if j_ui::test_support::install_theme(ui, &mut fresh) {
+                return;
+            }
             let response = ui.add(
                 TextInput::search(&mut state.0)
                     .height(36.0)
                     .clearable("Clear Search"),
             );
             assert_eq!(response.rect.height(), 36.0);
-            state.1 = response.changed();
+            state.1 |= response.changed();
         },
         (String::from("query"), false),
     );
     h.get_by_label("Clear Search").click();
     h.run();
     assert!(h.state().0.is_empty());
+    assert!(h.state().1);
     assert!(h.query_by_label("Clear Search").is_none());
     assert!(
         h.get_by_role(egui::accesskit::Role::TextInput)
