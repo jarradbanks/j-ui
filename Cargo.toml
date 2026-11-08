@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["."]
+members = [".", "crates/j-update"]
 
 [workspace.package]
 version = "0.1.0"
@@ -41,6 +41,7 @@ workspace = true
 
 [dependencies]
 egui.workspace = true
+j-update = { path = "crates/j-update" }
 serde.workspace = true
 sys-locale = "0.3.2"
 toml.workspace = true
@@ -50,6 +51,7 @@ toml.workspace = true
 test-support = []
 
 [dev-dependencies]
+tempfile = "3"
 j-ui = { path = ".", features = ["test-support"] }
 eframe.workspace = true
 egui_kittest.workspace = true

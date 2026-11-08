@@ -78,3 +78,6 @@ video = "Video"
 title = "Titolo"
 still = "Immagine fissa"
 audio = "Audio"
+
+[update]
+notes = "Miglioramenti e correzioni della riproduzione."

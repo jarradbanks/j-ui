@@ -13,3 +13,5 @@ pub mod theme;
 pub mod themes;
 pub mod tokens;
 pub mod widgets;
+
+pub mod update;

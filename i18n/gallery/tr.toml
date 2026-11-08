@@ -78,3 +78,6 @@ video = "Video"
 title = "Başlık"
 still = "Durağan Görüntü"
 audio = "Ses"
+
+[update]
+notes = "Oynatma iyileştirmeleri ve düzeltmeleri."

@@ -78,3 +78,6 @@ video = "Video"
 title = "Titel"
 still = "Stilstaand beeld"
 audio = "Audio"
+
+[update]
+notes = "Verbeteringen en oplossingen voor afspelen."

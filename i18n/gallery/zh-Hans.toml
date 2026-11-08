@@ -78,3 +78,6 @@ video = "视频"
 title = "标题"
 still = "静帧"
 audio = "音频"
+
+[update]
+notes = "播放功能改进和修复。"
