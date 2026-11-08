@@ -99,8 +99,9 @@
 //!
 //! * All checks sort stable SemVer releases, ignore drafts/prereleases/non-version tags,
 //!   accept a leading v on tags only, and ignore current build metadata for precedence.
-//!   Equal versions and downgrades never install. Helper comparison now matches the checker,
-//!   including a stable release newer than an installed prerelease (jvid's rule).
+//!   Equal versions and downgrades never install. Automatic installation additionally requires
+//!   a stable installed version without build metadata (the stricter jplay/jvec helper rule);
+//!   jvid previously allowed installed prereleases/build metadata at that boundary.
 //! * Choose the newest stable release and fail visibly if it lacks valid update files or a
 //!   compatible target/distribution. Do not fall back to an older candidate as jvid did.
 //! * Preserve jvid's five manual package types through caller-supplied packages. External

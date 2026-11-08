@@ -96,7 +96,7 @@ pub fn validate(config: &Config, dir: &Path, plan: &Plan, current: &str) -> Resu
     let m = metadata::verify_files(config, dir)?;
     if metadata::stable_version(&plan.tag)?.to_string() != m.version
         || metadata::stable_version(&m.version)?
-            .cmp_precedence(&semver::Version::parse(current).map_err(error)?)
+            .cmp_precedence(&metadata::stable_version(current)?)
             .is_le()
     {
         return Err("Refusing a mismatched version or downgrade.".into());

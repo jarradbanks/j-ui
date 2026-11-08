@@ -89,8 +89,9 @@ mod tests {
             )
         };
         assert!(verify(&plan, "1.0.0").is_ok());
-        assert!(verify(&plan, "1.2.0-beta.1").is_ok());
+        assert!(verify(&plan, "1.2.0-beta.1").is_err());
         assert!(verify(&plan, "1.2.0+local").is_err());
+        assert!(verify(&plan, "1.0.0+local").is_err());
         assert!(verify(&plan, "1.2.0").is_err());
         assert!(verify(&plan, "2.0.0").is_err());
         plan.tag = "v1.3.0".into();
