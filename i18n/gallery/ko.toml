@@ -78,3 +78,6 @@ video = "비디오"
 title = "타이틀"
 still = "스틸 이미지"
 audio = "오디오"
+
+[update]
+notes = "재생 기능 개선 및 수정."

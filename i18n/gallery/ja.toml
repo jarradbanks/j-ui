@@ -78,3 +78,6 @@ video = "ビデオ"
 title = "タイトル"
 still = "静止画"
 audio = "オーディオ"
+
+[update]
+notes = "再生機能の改善と修正。"

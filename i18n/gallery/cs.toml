@@ -78,3 +78,6 @@ video = "Video"
 title = "Titulek"
 still = "Obrázek"
 audio = "Zvuk"
+
+[update]
+notes = "Vylepšení a opravy přehrávání."
