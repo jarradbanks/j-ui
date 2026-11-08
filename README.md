@@ -3,7 +3,7 @@
 Shared egui UI kit for jvid, jclip and jvec.
 
 ```toml
-j-ui = { git = "https://github.com/jarradbanks/j-ui", tag = "v0.1.0" }
+j-ui = { git = "https://github.com/jarradbanks/j-ui", tag = "v0.2.0" }
 ```
 
 ```sh
