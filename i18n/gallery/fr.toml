@@ -25,6 +25,11 @@ overflow = "Les onglets de moins de 64 px passent dans le menu à chevron."
 type_and_colour = "Typographie et couleur"
 
 [row]
+toggle = "Interrupteur"
+pills = "Options"
+breadcrumb = "Fil d’Ariane"
+selection = "Sélection"
+
 primary = "Principal"
 secondary = "Secondaire"
 ghost = "Fantôme"

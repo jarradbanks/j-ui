@@ -25,6 +25,11 @@ overflow = "64px보다 좁은 탭은 갈매기형 메뉴로 이동합니다."
 type_and_colour = "글자와 색상"
 
 [row]
+toggle = "스위치"
+pills = "옵션"
+breadcrumb = "탐색 경로"
+selection = "선택"
+
 primary = "기본"
 secondary = "보조"
 ghost = "고스트"

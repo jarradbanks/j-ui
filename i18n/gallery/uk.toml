@@ -25,6 +25,11 @@ overflow = "Вкладки, вужчі за 64 пкс, переходять у �
 type_and_colour = "Шрифти й кольори"
 
 [row]
+toggle = "Перемикач"
+pills = "Варіанти"
+breadcrumb = "Шлях"
+selection = "Вибір"
+
 primary = "Основна"
 secondary = "Другорядна"
 ghost = "Прозора"

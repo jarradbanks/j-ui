@@ -1556,6 +1556,7 @@ dependencies = [
  "sys-locale",
  "tempfile",
  "toml",
+ "windows 0.62.2",
 ]
 
 [[package]]

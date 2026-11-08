@@ -25,6 +25,11 @@ overflow = "Flikar smalare än 64 px flyttas till menyn bakom vinkelpilen."
 type_and_colour = "Text och färg"
 
 [row]
+toggle = "Reglage"
+pills = "Alternativ"
+breadcrumb = "Sökväg"
+selection = "Markering"
+
 primary = "Primär"
 secondary = "Sekundär"
 ghost = "Spöke"

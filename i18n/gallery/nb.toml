@@ -25,6 +25,11 @@ overflow = "Faner smalere enn 64 px flyttes til vinkelmenyen."
 type_and_colour = "Skrift og farge"
 
 [row]
+toggle = "Bryter"
+pills = "Valg"
+breadcrumb = "Sti"
+selection = "Markering"
+
 primary = "Primær"
 secondary = "Sekundær"
 ghost = "Spøkelse"

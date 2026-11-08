@@ -25,6 +25,11 @@ overflow = "Karty užší než 64 px se přesunou do nabídky se šipkou."
 type_and_colour = "Písmo a barva"
 
 [row]
+toggle = "Přepínač"
+pills = "Volby"
+breadcrumb = "Cesta"
+selection = "Výběr"
+
 primary = "Primární"
 secondary = "Sekundární"
 ghost = "Průhledné"

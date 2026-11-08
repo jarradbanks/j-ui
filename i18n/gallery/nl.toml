@@ -25,6 +25,11 @@ overflow = "Tabbladen smaller dan 64 px gaan naar het pijltjesmenu."
 type_and_colour = "Typografie en kleur"
 
 [row]
+toggle = "Schakelaar"
+pills = "Opties"
+breadcrumb = "Pad"
+selection = "Selectie"
+
 primary = "Primair"
 secondary = "Secundair"
 ghost = "Ghost"

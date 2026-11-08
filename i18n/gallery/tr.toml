@@ -25,6 +25,11 @@ overflow = "64 pikselden dar sekmeler köşeli ok menüsüne taşınır."
 type_and_colour = "Yazı ve Renk"
 
 [row]
+toggle = "Anahtar"
+pills = "Seçenekler"
+breadcrumb = "Gezinti"
+selection = "Seçim"
+
 primary = "Birincil"
 secondary = "İkincil"
 ghost = "Hayalet"

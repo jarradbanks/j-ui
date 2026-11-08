@@ -25,6 +25,11 @@ overflow = "Karty węższe niż 64 px trafiają do menu ze strzałką."
 type_and_colour = "Typografia i kolor"
 
 [row]
+toggle = "Przełącznik"
+pills = "Opcje"
+breadcrumb = "Ścieżka"
+selection = "Zaznaczenie"
+
 primary = "Główny"
 secondary = "Drugorzędny"
 ghost = "Przezroczysty"
