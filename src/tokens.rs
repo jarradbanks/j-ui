@@ -12,7 +12,8 @@ pub mod color {
     use super::hex;
     use egui::Color32;
 
-    pub const BLUE_HOVER: Color32 = hex(0x2C70D3);
+    /// The original Dark hover colour. Use [`blue_hover`] for the applied theme.
+    pub const BLUE_HOVER: Color32 = crate::themes::DARK.blue_hover;
     pub const BLUE_PRESSED: Color32 = hex(0x215DB3);
 
     pub const CLIP_VIOLET: Color32 = hex(0x5E589F);
@@ -33,10 +34,15 @@ pub mod color {
     }
     themed!(
         blue,
+        blue_soft,
+        blue_hover,
         light_blue,
         red,
+        red_soft,
         amber,
+        amber_soft,
         green,
+        green_soft,
         ground,
         panel,
         raised,
