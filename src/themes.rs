@@ -22,14 +22,25 @@ use crate::tr;
 pub struct Palette {
     #[serde(with = "hex")]
     pub blue: Color32,
+    /// Subtle accent fill, precomposed over `panel` so theme files stay `#RRGGBB`.
+    #[serde(with = "hex")]
+    pub blue_soft: Color32,
+    #[serde(with = "hex")]
+    pub blue_hover: Color32,
     #[serde(with = "hex")]
     pub light_blue: Color32,
     #[serde(with = "hex")]
     pub red: Color32,
     #[serde(with = "hex")]
+    pub red_soft: Color32,
+    #[serde(with = "hex")]
     pub amber: Color32,
     #[serde(with = "hex")]
+    pub amber_soft: Color32,
+    #[serde(with = "hex")]
     pub green: Color32,
+    #[serde(with = "hex")]
+    pub green_soft: Color32,
     #[serde(with = "hex")]
     pub ground: Color32,
     #[serde(with = "hex")]
@@ -60,10 +71,15 @@ impl Default for Palette {
 
 pub const DARK: Palette = Palette {
     blue: hex(0x2368C9),
+    blue_soft: hex(0x152133),
+    blue_hover: hex(0x2C70D3),
     light_blue: hex(0x7AACF6),
     red: hex(0xEC5B57),
+    red_soft: hex(0x311E1F),
     amber: hex(0xF2AF48),
+    amber_soft: hex(0x312A1D),
     green: hex(0x4EBE7D),
+    green_soft: hex(0x1A2C24),
     ground: hex(0x0A0B0D),
     panel: hex(0x121416),
     raised: hex(0x1C1E21),
@@ -78,10 +94,15 @@ pub const DARK: Palette = Palette {
 
 pub const LIGHT: Palette = Palette {
     blue: DARK.blue,
+    blue_soft: hex(0xDDE6F2),
+    blue_hover: DARK.blue_hover,
     light_blue: hex(0x1D5BB5),
     red: hex(0xC03632),
+    red_soft: hex(0xF1E4E4),
     amber: hex(0x8A5A00),
+    amber_soft: hex(0xE9E4DA),
     green: hex(0x1E7A46),
+    green_soft: hex(0xDCE8E3),
     ground: hex(0xE6E7EA),
     panel: hex(0xF6F7F8),
     raised: Color32::WHITE,
@@ -96,10 +117,15 @@ pub const LIGHT: Palette = Palette {
 
 pub const HIGH_CONTRAST: Palette = Palette {
     blue: DARK.blue,
+    blue_soft: hex(0x061120),
+    blue_hover: DARK.blue_hover,
     light_blue: hex(0x9CC4FF),
     red: hex(0xFF7A75),
+    red_soft: hex(0x241110),
     amber: hex(0xFFC85C),
+    amber_soft: hex(0x241C0D),
     green: hex(0x6BE09A),
+    green_soft: hex(0x0F1F16),
     ground: Color32::BLACK,
     panel: Color32::BLACK,
     raised: hex(0x141414),
@@ -345,6 +371,49 @@ mod tests {
         let p = Palette::from_toml("panel = \"#FFFFFF\"").unwrap();
         assert_eq!(p.panel, Color32::WHITE);
         assert_eq!(p.ink, DARK.ink);
+    }
+
+    #[test]
+    fn older_themes_can_omit_the_new_variants() {
+        let variants = [
+            "blue_soft",
+            "blue_hover",
+            "red_soft",
+            "amber_soft",
+            "green_soft",
+        ];
+        for (_, original) in BUILT_IN {
+            let old = original
+                .to_toml()
+                .lines()
+                .filter(|line| !variants.iter().any(|key| line.starts_with(key)))
+                .collect::<Vec<_>>()
+                .join("\n");
+            let p = Palette::from_toml(&old).unwrap();
+            assert_eq!(p.panel, original.panel);
+            assert_eq!(p.blue, original.blue);
+            assert_eq!(p.blue_soft, DARK.blue_soft);
+            assert_eq!(p.blue_hover, DARK.blue_hover);
+            assert_eq!(p.red_soft, DARK.red_soft);
+            assert_eq!(p.amber_soft, DARK.amber_soft);
+            assert_eq!(p.green_soft, DARK.green_soft);
+        }
+
+        // Explicit values load and reach the public themed token accessors.
+        let text = variants
+            .map(|key| format!("{key} = \"#010203\"\n"))
+            .join("");
+        let p = Palette::from_toml(&text).unwrap();
+        apply(&Context::default(), &p);
+        for token in [
+            crate::tokens::color::blue_soft(),
+            crate::tokens::color::blue_hover(),
+            crate::tokens::color::red_soft(),
+            crate::tokens::color::amber_soft(),
+            crate::tokens::color::green_soft(),
+        ] {
+            assert_eq!(token, hex(0x010203));
+        }
     }
 
     #[test]
