@@ -325,7 +325,7 @@ impl Widget for Button<'_> {
                     let fill = if l.pressed {
                         color::BLUE_PRESSED
                     } else {
-                        hover_fade(ui, response.id, l.hover, color::blue(), color::BLUE_HOVER)
+                        hover_fade(ui, response.id, l.hover, color::blue(), color::blue_hover())
                     };
                     (fill, color::WHITE, None)
                 }
@@ -1144,12 +1144,15 @@ impl Widget for Dropdown<'_> {
     }
 }
 
-/// A 24px menu row: Body Ink text with a 6px-radius Border-colour hover fill.
+/// A 24px menu row with an optional right-aligned shortcut and trailing checkmark.
+/// Labels elide to leave room for both; disabled rows ignore pointer and keyboard input.
 #[must_use = "add it with `ui.add(..)`"]
 pub struct MenuRow<'a> {
     label: &'a str,
     checked: bool,
     lit: bool,
+    shortcut: &'a str,
+    enabled: bool,
 }
 
 impl<'a> MenuRow<'a> {
@@ -1159,6 +1162,8 @@ impl<'a> MenuRow<'a> {
             label,
             checked,
             lit: false,
+            shortcut: "",
+            enabled: true,
         }
     }
 
@@ -1167,43 +1172,91 @@ impl<'a> MenuRow<'a> {
         self.lit = lit;
         self
     }
+
+    /// Display text only: the application handles the shortcut itself.
+    pub fn shortcut(mut self, shortcut: &'a str) -> Self {
+        self.shortcut = shortcut;
+        self
+    }
+
+    pub fn enabled(mut self, enabled: bool) -> Self {
+        self.enabled = enabled;
+        self
+    }
 }
 
 impl Widget for MenuRow<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let width = ui.available_width();
-        let (rect, response) = ui.allocate_exact_size(vec2(width, size::CONTROL), Sense::click());
-        response.widget_info(|| {
-            WidgetInfo::selected(WidgetType::SelectableLabel, true, self.checked, self.label)
-        });
-        if self.lit || response.hovered() || response.has_focus() {
-            ui.painter()
-                .rect_filled(rect, CornerRadius::same(radius::CONTROL), color::border());
-        }
-        let check_x = rect.right() - space::S4 - size::ICON / 2.0;
-        let room = check_x - size::ICON / 2.0 - space::S4 - (rect.left() + space::S8);
-        let text = fit_text(ui, self.label, theme::body(), color::ink(), room);
-        let elided = text.elided;
-        paint_left(
-            ui,
-            rect.left() + space::S8,
-            rect.center().y,
-            text,
-            color::ink(),
-        );
-        if self.checked {
-            ui.painter().text(
-                pos2(check_x, rect.center().y),
-                Align2::CENTER_CENTER,
-                icon::CHECK,
-                theme::icon_font(),
-                color::ink_2(),
+        ui.add_enabled_ui(self.enabled, |ui| {
+            let width = ui.available_width();
+            let (rect, response) =
+                ui.allocate_exact_size(vec2(width, size::CONTROL), Sense::click());
+            response.widget_info(|| {
+                WidgetInfo::selected(
+                    WidgetType::SelectableLabel,
+                    response.enabled(),
+                    self.checked,
+                    self.label,
+                )
+            });
+            let enabled = response.enabled();
+            if enabled && (self.lit || response.hovered() || response.has_focus()) {
+                ui.painter().rect_filled(
+                    rect,
+                    CornerRadius::same(radius::CONTROL),
+                    color::border(),
+                );
+            }
+            let ink = if enabled {
+                color::ink()
+            } else {
+                color::ink_4()
+            };
+            let secondary = if enabled {
+                color::ink_2()
+            } else {
+                color::ink_4()
+            };
+            let check_x = rect.right() - space::S4 - size::ICON / 2.0;
+            let shortcut_right = check_x - size::ICON / 2.0 - space::S4;
+            let shortcut = fit_text(
+                ui,
+                self.shortcut,
+                theme::small(),
+                secondary,
+                ((shortcut_right - rect.left() - space::S8) / 2.0).max(0.0),
             );
-        }
-        if elided {
-            return response.on_hover_text(self.label);
-        }
-        response
+            let shortcut_left = shortcut_right - shortcut.size().x;
+            let label_right = if self.shortcut.is_empty() {
+                shortcut_right
+            } else {
+                shortcut_left - space::S12
+            };
+            let room = label_right - (rect.left() + space::S8);
+            let text = fit_text(ui, self.label, theme::body(), ink, room);
+            let elided = text.elided || shortcut.elided;
+            paint_left(ui, rect.left() + space::S8, rect.center().y, text, ink);
+            paint_left(ui, shortcut_left, rect.center().y, shortcut, secondary);
+            if self.checked {
+                ui.painter().text(
+                    pos2(check_x, rect.center().y),
+                    Align2::CENTER_CENTER,
+                    icon::CHECK,
+                    theme::icon_font(),
+                    secondary,
+                );
+            }
+            if elided {
+                let full = if self.shortcut.is_empty() {
+                    self.label.to_owned()
+                } else {
+                    format!("{} ({})", self.label, self.shortcut)
+                };
+                return response.on_hover_text(full);
+            }
+            response
+        })
+        .inner
     }
 }
 
@@ -1504,7 +1557,7 @@ impl Widget for Checkbox<'_> {
             let fill = if l.pressed {
                 color::BLUE_PRESSED
             } else if l.hover {
-                color::BLUE_HOVER
+                color::blue_hover()
             } else {
                 color::blue()
             };
@@ -1690,13 +1743,14 @@ impl Widget for KeyButton<'_> {
 
 /// A slider for a ranged value: a 2px track filled from its start, or from zero when
 /// `centred`, and a 6x14 thumb. Drag or click to set; arrow keys step 1% of the range.
-/// Takes the width left in the row.
+/// Takes the width left in the row, or the height left in the column when vertical.
 #[must_use = "add it with `ui.add(..)`"]
 pub struct Slider<'a> {
     value: &'a mut f64,
     range: std::ops::RangeInclusive<f64>,
     step: Option<f64>,
     centred: bool,
+    vertical: bool,
     name: &'a str,
     state: State,
 }
@@ -1709,6 +1763,7 @@ impl<'a> Slider<'a> {
             range,
             step: None,
             centred: false,
+            vertical: false,
             name,
             state: State::Live,
         }
@@ -1726,6 +1781,12 @@ impl<'a> Slider<'a> {
         self
     }
 
+    /// Runs bottom to top, with Up/Down stepping the value. Use `ui.add_sized` to set height.
+    pub fn vertical(mut self) -> Self {
+        self.vertical = true;
+        self
+    }
+
     pub fn state(mut self, state: State) -> Self {
         self.state = state;
         self
@@ -1734,35 +1795,60 @@ impl<'a> Slider<'a> {
 
 impl Widget for Slider<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let width = ui.available_width().max(40.0);
-        let (rect, mut response) = allocate(
-            ui,
-            vec2(width, size::CONTROL),
-            self.state,
-            Sense::click_and_drag(),
-        );
+        let desired = if self.vertical {
+            vec2(size::CONTROL, ui.available_height().max(40.0))
+        } else {
+            vec2(ui.available_width().max(40.0), size::CONTROL)
+        };
+        let (rect, mut response) = allocate(ui, desired, self.state, Sense::click_and_drag());
         let (lo, hi) = (*self.range.start(), *self.range.end());
         // The thumb's centre travels inside the track so it never overhangs the row.
-        let track = rect.shrink2(vec2(3.0, 0.0)).x_range();
-        let x_of =
-            |v: f64| track.min + (((v - lo) / (hi - lo)).clamp(0.0, 1.0) as f32) * track.span();
+        let track = if self.vertical {
+            rect.shrink2(vec2(0.0, 3.0)).y_range()
+        } else {
+            rect.shrink2(vec2(3.0, 0.0)).x_range()
+        };
+        let position_of = |v: f64| {
+            let t = ((v - lo) / (hi - lo)).clamp(0.0, 1.0) as f32;
+            track.min + (if self.vertical { 1.0 - t } else { t }) * track.span()
+        };
         let snap = |v: f64| match self.step {
             Some(s) => (lo + ((v - lo) / s).round() * s).clamp(lo, hi),
             None => v,
         };
+        if response.clicked() || response.drag_started() {
+            response.request_focus();
+        }
         if (response.dragged() || response.clicked())
             && let Some(p) = response.interact_pointer_pos()
         {
-            let t = ((p.x - track.min) / track.span()).clamp(0.0, 1.0) as f64;
+            let axis = if self.vertical { p.y } else { p.x };
+            let t = ((axis - track.min) / track.span()).clamp(0.0, 1.0) as f64;
+            let t = if self.vertical { 1.0 - t } else { t };
             let v = snap(lo + t * (hi - lo));
             if v != *self.value {
                 *self.value = v;
                 response.mark_changed();
             }
         }
-        if response.has_focus() {
+        if response.has_focus() && response.enabled() && self.state != State::Disabled {
+            ui.memory_mut(|m| {
+                m.set_focus_lock_filter(
+                    response.id,
+                    egui::EventFilter {
+                        horizontal_arrows: !self.vertical,
+                        vertical_arrows: self.vertical,
+                        ..Default::default()
+                    },
+                );
+            });
             let step = ui.input(|i| {
-                i32::from(i.key_pressed(Key::ArrowRight)) - i32::from(i.key_pressed(Key::ArrowLeft))
+                let (increase, decrease) = if self.vertical {
+                    (Key::ArrowUp, Key::ArrowDown)
+                } else {
+                    (Key::ArrowRight, Key::ArrowLeft)
+                };
+                i32::from(i.key_pressed(increase)) - i32::from(i.key_pressed(decrease))
             });
             if step != 0 {
                 let by = self.step.unwrap_or((hi - lo) / 100.0);
@@ -1771,29 +1857,59 @@ impl Widget for Slider<'_> {
             }
         }
         response.widget_info(|| {
-            WidgetInfo::slider(self.state != State::Disabled, *self.value, self.name)
+            WidgetInfo::slider(
+                response.enabled() && self.state != State::Disabled,
+                *self.value,
+                self.name,
+            )
+        });
+        ui.ctx().accesskit_node_builder(response.id, |node| {
+            node.set_orientation(if self.vertical {
+                egui::accesskit::Orientation::Vertical
+            } else {
+                egui::accesskit::Orientation::Horizontal
+            });
         });
         let l = look(&response, self.state);
-        let y = rect.center().y;
+        let cross = if self.vertical {
+            rect.center().x
+        } else {
+            rect.center().y
+        };
+        let point = |axis, cross| {
+            if self.vertical {
+                pos2(cross, axis)
+            } else {
+                pos2(axis, cross)
+            }
+        };
+        let box_of = |axis: egui::Rangef, cross: egui::Rangef| {
+            Rect::from_two_pos(point(axis.min, cross.min), point(axis.max, cross.max))
+        };
         let from = if self.centred { 0.0 } else { lo };
-        let (a, b) = (x_of(from), x_of(*self.value));
+        let (a, b) = (position_of(from), position_of(*self.value));
         let painter = ui.painter();
         if self.centred {
             let line = 1.0 / ui.pixels_per_point();
             painter.rect_filled(
-                Rect::from_x_y_ranges(a - line / 2.0..=a + line / 2.0, y - 5.0..=y + 5.0),
+                box_of(
+                    (a - line / 2.0..=a + line / 2.0).into(),
+                    (cross - 5.0..=cross + 5.0).into(),
+                ),
                 0.0,
                 color::border_strong(),
             );
         }
-        let bar = |x: egui::Rangef| Rect::from_x_y_ranges(x, y - 1.0..=y + 1.0);
+        let bar = |axis: egui::Rangef| box_of(axis, (cross - 1.0..=cross + 1.0).into());
         painter.rect_filled(bar(track), 0.0, color::border_strong());
         if let Some(s) = self.step {
             let line = 1.0 / ui.pixels_per_point();
             for k in 0..=((hi - lo) / s).round() as usize {
-                let x = x_of(lo + k as f64 * s);
-                let tick =
-                    Rect::from_x_y_ranges(x - line / 2.0..=x + line / 2.0, y + 3.0..=y + 6.0);
+                let x = position_of(lo + k as f64 * s);
+                let tick = box_of(
+                    (x - line / 2.0..=x + line / 2.0).into(),
+                    (cross + 3.0..=cross + 6.0).into(),
+                );
                 painter.rect_filled(tick, 0.0, color::border_strong());
             }
         }
@@ -1804,7 +1920,12 @@ impl Widget for Slider<'_> {
                 color::ink_3(),
             );
         }
-        let thumb = Rect::from_center_size(pos2(b, y), vec2(6.0, 14.0))
+        let thumb_size = if self.vertical {
+            vec2(14.0, 6.0)
+        } else {
+            vec2(6.0, 14.0)
+        };
+        let thumb = Rect::from_center_size(point(b, cross), thumb_size)
             .round_to_pixels(ui.pixels_per_point());
         let ink = if l.disabled {
             color::ink_4()

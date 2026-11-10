@@ -6,6 +6,12 @@
 
 # The accent: the primary button, focus and selection fills.
 blue = "#2368C9"
+blue_hover = "#2C70D3"
+# Subtle fills, precomposed over panel (12% blue/amber/green, 10% red).
+blue_soft = "#CFD9E7"
+red_soft = "#E1D6D8"
+amber_soft = "#DAD6CF"
+green_soft = "#CEDAD7"
 # Lines and text on the accent's side: playhead, focus rings, links.
 light_blue = "#1D5BB5"
 # State: errors, warnings, done.
