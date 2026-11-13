@@ -606,6 +606,10 @@ impl Widget for TextInput<'_> {
                 .text_color(ink)
                 .hint_text(self.hint);
                 if self.rows == 1 {
+                    // A stable capital keeps the baseline fixed while the value changes.
+                    let metrics = ui.painter().layout_no_wrap('H'.into(), theme::body(), ink);
+                    let offset = row / 2.0 - metrics.mesh_bounds.center().y;
+                    let edit_rect = edit_rect.translate(vec2(0.0, offset));
                     return ui.put(edit_rect, edit);
                 }
                 ui.put(edit_rect, |ui: &mut Ui| {
