@@ -83,11 +83,11 @@ pub fn paint_icon(painter: &egui::Painter, center: egui::Pos2, glyph: &str, colo
     painter.galley(pos, galley, color);
 }
 
-/// The focus-visible ring: 2px Light Blue at 60%, 1px outside the shape.
+/// A 2pt focus ring inset 1pt so parent clips cannot crop it.
 pub fn focus_ring(rect: Rect, corner: u8) -> Shape {
     Shape::rect_stroke(
-        rect.expand(3.0),
-        CornerRadius::same(corner + 2),
+        rect.shrink(1.0),
+        CornerRadius::same(corner.saturating_sub(1)),
         Stroke::new(2.0, color::light_blue().gamma_multiply(0.6)),
         StrokeKind::Inside,
     )
@@ -610,6 +610,8 @@ impl Widget for TextInput<'_> {
                 }
                 ui.put(edit_rect, |ui: &mut Ui| {
                     egui::ScrollArea::vertical()
+                        // egui's default 64pt viewport overflows short multiline fields.
+                        .min_scrolled_height(0.0)
                         .auto_shrink(false)
                         .show(ui, |ui| ui.add(edit))
                         .inner

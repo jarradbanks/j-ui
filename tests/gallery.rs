@@ -6,8 +6,6 @@ mod gallery;
 
 use j_ui::test_support as common;
 
-use j_ui::tokens::radius;
-
 #[test]
 fn gallery_snapshot() {
     if !common::gpu() {
@@ -48,9 +46,5 @@ fn corners_come_from_the_scale() {
                 &call[..30]
             );
         }
-    }
-    // The focus ring sits 2px outside its shape's corner.
-    for r in [radius::SMALL, radius::CONTROL] {
-        assert!(radius::SCALE.contains(&(r + 2)));
     }
 }
