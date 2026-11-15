@@ -129,7 +129,8 @@ timeout; unrelated or late screenshots cannot replace it.
 | Off / release build | No plugin, capture, listener, or remote input; release ignores opt-in even with all features |
 | Connecting / missing file | Viewer stays up; health returns 503 |
 | Live | Canvas and semantic proxies update together; browser input maps to native points |
-| Offline / compile failure | Old proxies disappear; held input times out within two seconds |
+| Offline / lost native connection | Old proxies disappear; held input times out within two seconds |
+| Source compile failure | Existing native process, frame and state remain live while the developer fixes the source |
 | Reconnect / new session | Cancel queued browser input, reset native holds, then show the new frame |
 | Viewport/DPI/layout change | Advance generation; reject queued old input and release held controls |
 | Focus loss / hidden tab | Reset keys/buttons/modifiers; native timeout covers lost reset requests |
@@ -149,6 +150,19 @@ upstream DioxusLabs/dioxus#5967 stub RAX fix and PC acceptance.
 
 The self-contained `debug_gallery` example has an optional `hot-reload` feature
 for a live Subsecond check without loading user projects or audio devices.
+After setting the explicit bridge opt-in and disposable connection path, launch
+with dx 0.7.10's default development profile:
+
+```sh
+dx serve --desktop --hot-patch --open false --interactive false \
+  -p j-ui-debug --example debug_gallery --features hot-reload
+```
+
+Do not pass `--profile dev`: dx 0.7.10 adds profile inheritance and Cargo rejects
+inheritance on its root `dev` profile. An isolated Linux Xvfb/lavapipe probe kept
+the same PID and bridge session through a deliberate compile error and a
+successful UI-body patch, preserving the native counter and unsaved text. This
+does not verify Windows hot-patching or incompatible struct layout changes.
 
 ```sh
 cargo fmt --all --check
