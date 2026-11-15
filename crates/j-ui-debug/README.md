@@ -114,13 +114,18 @@ JSON length, UTF-8 metadata, then its matching PNG. Metadata contains
 pixels, `ppp` is pixels per egui point, and `target.rect` is `[left, top, width,
 height]` normalized to the captured root viewport after clipping/transforms.
 Targets contain `{id, path, label, role, source, rect, z_order, enabled}`.
+PNG encoding uses fast compression so native capture does not starve input.
+Absolute request/write deadlines also bound shutdown when a client trickles data.
 
 `POST /input` accepts `{session, frame, generation, events}`. Events are `move`,
 `button`, `key`, `text`, `wheel`, `modifiers`, `reset`, or `keep_alive`; the schemas
 are in `src/input.rs`. Coordinates are normalized, body/event counts are bounded,
 and unknown fields, invalid keys/numbers, wrong sessions, stale frames/layouts,
 and overflowing queues are rejected. A second fence checks layout, dimensions,
-and queue age on the egui thread. Frame and pending screenshot metadata stay
+and queue age on the egui thread. The viewer batches input within the same
+64-event/16-KiB limits and cancels queued events older than 300 ms or from a
+previous layout/session, rather than replaying them after a slow request.
+Frame and pending screenshot metadata stay
 paired across resize/DPI changes. One outstanding screenshot has a typed ID and
 timeout; unrelated or late screenshots cannot replace it.
 

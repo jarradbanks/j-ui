@@ -157,6 +157,7 @@ fn encode(capture: Capture) -> io::Result<Frame> {
     let mut encoder = png::Encoder::new(&mut png, width as u32, height as u32);
     encoder.set_color(png::ColorType::Rgba);
     encoder.set_depth(png::BitDepth::Eight);
+    encoder.set_compression(png::Compression::Fastest);
     let mut writer = encoder.write_header()?;
     let pixels = capture
         .image
@@ -185,10 +186,12 @@ fn serve(
     shared: &Mutex<Shared>,
     inputs: &mpsc::SyncSender<Batch>,
 ) -> io::Result<()> {
-    stream.set_read_timeout(Some(Duration::from_secs(1)))?;
-    stream.set_write_timeout(Some(Duration::from_secs(1)))?;
+    stream.set_read_timeout(Some(Duration::from_millis(100)))?;
+    stream.set_write_timeout(Some(Duration::from_millis(100)))?;
+    let deadline = Instant::now() + Duration::from_secs(1);
     let mut data = Vec::new();
     let header_end = loop {
+        check_deadline(deadline)?;
         let mut chunk = [0_u8; 2048];
         let read = stream.read(&mut chunk)?;
         if read == 0 {
@@ -238,6 +241,7 @@ fn serve(
     let method = request.method.unwrap_or_default().to_owned();
     let path = request.path.unwrap_or_default().to_owned();
     while data.len() < header_end + length {
+        check_deadline(deadline)?;
         let mut chunk = [0_u8; 2048];
         let read = stream.read(&mut chunk)?;
         if read == 0 {
@@ -311,19 +315,153 @@ fn serve(
 }
 
 fn reply(stream: &mut TcpStream, code: u16, headers: &[u8], body: &[u8]) -> io::Result<()> {
-    write!(
-        stream,
+    let header = format!(
         "HTTP/1.1 {code} Result\r\nConnection: close\r\nCache-Control: no-store\r\nContent-Length: {}\r\n",
         body.len()
-    )?;
-    stream.write_all(headers)?;
-    stream.write_all(b"\r\n")?;
-    stream.write_all(body)
+    );
+    let deadline = Instant::now() + Duration::from_secs(1);
+    for mut bytes in [header.as_bytes(), headers, b"\r\n", body] {
+        while !bytes.is_empty() {
+            check_deadline(deadline)?;
+            let written = stream.write(bytes)?;
+            if written == 0 {
+                return Err(io::ErrorKind::WriteZero.into());
+            }
+            bytes = &bytes[written..];
+        }
+    }
+    Ok(())
+}
+
+fn check_deadline(deadline: Instant) -> io::Result<()> {
+    if Instant::now() >= deadline {
+        return Err(io::ErrorKind::TimedOut.into());
+    }
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn continuous_native_frames_do_not_starve_input() {
+        let directory = tempfile::tempdir().unwrap();
+        let config = directory.path().join("connection.json");
+        let shared = Arc::new(Mutex::new(Shared::default()));
+        let (send_input, receive_input) = mpsc::sync_channel(64);
+        let (send_image, receive_image) = mpsc::sync_channel(1);
+        let server = start(
+            &config,
+            "latency",
+            shared.clone(),
+            send_input,
+            receive_image,
+        )
+        .unwrap();
+        shared.lock().unwrap().generation = 1;
+        let image = Arc::new(egui::ColorImage::filled([1920, 1080], egui::Color32::BLACK));
+        let stop = Arc::new(AtomicBool::new(false));
+        let producer_stop = stop.clone();
+        let producer = std::thread::spawn(move || {
+            let mut sequence = 1;
+            while !producer_stop.load(Ordering::Relaxed) {
+                let capture = Capture {
+                    image: image.clone(),
+                    ppp: 1.0,
+                    sequence,
+                    generation: 1,
+                    targets: vec![],
+                };
+                if send_image.try_send(capture).is_ok() {
+                    sequence += 1;
+                }
+                std::thread::sleep(Duration::from_millis(10));
+            }
+        });
+        let deadline = Instant::now() + Duration::from_secs(3);
+        while shared.lock().unwrap().frame.is_none() && Instant::now() < deadline {
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        let config: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(config).unwrap()).unwrap();
+        let address = config["url"]
+            .as_str()
+            .unwrap()
+            .trim_start_matches("http://");
+        let token = config["token"].as_str().unwrap();
+        let mut longest = Duration::ZERO;
+        for _ in 0..12 {
+            let frame = shared.lock().unwrap().frame.as_ref().unwrap().sequence;
+            let body = serde_json::json!({"session": &token[..16], "frame": frame, "generation": 1, "events": [{"kind": "keep_alive"}]}).to_string();
+            let started = Instant::now();
+            let mut stream = TcpStream::connect(address).unwrap();
+            write!(stream, "POST /input HTTP/1.1\r\nAuthorization: Bearer {token}\r\nContent-Length: {}\r\n\r\n{body}", body.len()).unwrap();
+            let mut response = String::new();
+            stream.read_to_string(&mut response).unwrap();
+            assert!(response.starts_with("HTTP/1.1 200"), "{response}");
+            let batch = receive_input
+                .recv_timeout(Duration::from_millis(300))
+                .unwrap();
+            assert!(batch.accepted.elapsed() < Duration::from_millis(300));
+            longest = longest.max(started.elapsed());
+        }
+        stop.store(true, Ordering::Relaxed);
+        producer.join().unwrap();
+        drop(server);
+        println!(
+            "PASSED native input under continuous 1920x1080 captures: longest round trip {longest:?}"
+        );
+        assert!(
+            longest < Duration::from_millis(300),
+            "native encoding must not starve ordinary input: {longest:?}"
+        );
+    }
+
+    #[test]
+    fn trickling_requests_cannot_extend_context_shutdown() {
+        let directory = tempfile::tempdir().unwrap();
+        let config = directory.path().join("connection.json");
+        let (inputs, _) = mpsc::sync_channel(1);
+        let (_, images) = mpsc::sync_channel(1);
+        let server = start(
+            &config,
+            "shutdown",
+            Arc::new(Mutex::new(Shared::default())),
+            inputs,
+            images,
+        )
+        .unwrap();
+        let connection: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&config).unwrap()).unwrap();
+        let address = connection["url"]
+            .as_str()
+            .unwrap()
+            .trim_start_matches("http://");
+        let mut stream = TcpStream::connect(address).unwrap();
+        stream.write_all(b"G").unwrap();
+        let stop = Arc::new(AtomicBool::new(false));
+        let writer_stop = stop.clone();
+        let writer = std::thread::spawn(move || {
+            while !writer_stop.load(Ordering::Relaxed) {
+                std::thread::sleep(Duration::from_millis(20));
+                if stream.write_all(b"x").is_err() {
+                    break;
+                }
+            }
+        });
+        std::thread::sleep(Duration::from_millis(50));
+        let started = Instant::now();
+        drop(server);
+        let elapsed = started.elapsed();
+        stop.store(true, Ordering::Relaxed);
+        writer.join().unwrap();
+        assert!(
+            elapsed < Duration::from_millis(1500),
+            "trickling client prolonged shutdown: {elapsed:?}"
+        );
+        assert!(!config.exists());
+    }
 
     #[test]
     fn transport_authenticates_and_rejects_stale_or_invalid_input() {

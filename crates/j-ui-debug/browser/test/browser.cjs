@@ -76,6 +76,8 @@ async function check() {
     let session = "1234567812345678";
     let online = true;
     let dynamic = true;
+    let generation = 1;
+    let inputDelay = 0;
     const inputs = [];
     const page = await browser.newPage();
     const png = Buffer.from(
@@ -135,7 +137,14 @@ async function check() {
         if (request.url === "/input") {
             let body = "";
             for await (const chunk of request) body += chunk;
-            inputs.push(JSON.parse(body));
+            const input = JSON.parse(body);
+            if (input.generation !== generation) {
+                response.writeHead(409);
+                response.end("{}");
+                return;
+            }
+            inputs.push(input);
+            await new Promise((accept) => setTimeout(accept, inputDelay));
             response.end("{}");
             return;
         }
@@ -143,7 +152,7 @@ async function check() {
             JSON.stringify({
                 session,
                 frame: 1,
-                generation: 1,
+                generation,
                 width: 1280,
                 height: 800,
                 ppp: 1,
@@ -282,6 +291,95 @@ async function check() {
                     `text ${JSON.stringify(text)}: ${JSON.stringify(keyboardEvents)}`,
                 );
             }
+            inputDelay = 80;
+            inputs.length = 0;
+            await view.keyboard.type("Z".repeat(60), { delay: 0 });
+            await view.waitForTimeout(1000);
+            assert.equal(
+                inputs
+                    .flatMap((batch) => batch.events)
+                    .filter((event) => event.kind === "text")
+                    .map((event) => event.text)
+                    .join(""),
+                "Z".repeat(60),
+                "bounded batching must preserve a fast text burst behind a delayed request",
+            );
+            assert.ok(inputs.every((batch) => batch.events.length <= 64));
+            inputs.length = 0;
+            for (let count = 0; count < 4; count += 1)
+                await view.keyboard.insertText("漢".repeat(2048));
+            await view.waitForTimeout(600);
+            assert.equal(
+                inputs
+                    .flatMap((batch) => batch.events)
+                    .filter((event) => event.kind === "text")
+                    .map((event) => event.text)
+                    .join(""),
+                "漢".repeat(8192),
+            );
+            assert.ok(
+                inputs.every(
+                    (batch) =>
+                        Buffer.byteLength(JSON.stringify(batch)) <= 16384,
+                ),
+            );
+            inputs.length = 0;
+            inputDelay = 350;
+            const stalled = view.waitForRequest(
+                (request) =>
+                    request.url().endsWith("/input") &&
+                    request
+                        .postDataJSON()
+                        .events.some(
+                            (event) =>
+                                event.kind === "key" &&
+                                event.key === "ArrowRight",
+                        ),
+            );
+            await view.keyboard.down("ArrowRight");
+            await stalled;
+            await view.keyboard.type("obsolete", { delay: 0 });
+            await view.keyboard.up("ArrowRight");
+            await view.waitForTimeout(1000);
+            const stale = inputs.flatMap((batch) => batch.events);
+            assert.ok(stale.some((event) => event.kind === "reset"));
+            assert.ok(!stale.some((event) => event.kind === "text"));
+            inputDelay = 80;
+            await view.keyboard.press("ArrowDown");
+            generation += 1;
+            dynamic = false;
+            await view
+                .locator('[data-native-id="overlay"]')
+                .waitFor({ state: "detached" });
+            inputs.length = 0;
+            for (let count = 0; count < 7; count += 1)
+                await view.keyboard.press("ArrowUp");
+            await view
+                .getByRole("button", { name: /^Apply —/ })
+                .click({ delay: 150 });
+            await view.waitForTimeout(600);
+            const resumed = inputs.flatMap((batch) => batch.events);
+            assert.equal(
+                resumed.filter(
+                    (event) =>
+                        event.kind === "key" &&
+                        event.key === "ArrowUp" &&
+                        event.pressed,
+                ).length,
+                7,
+            );
+            assert.ok(
+                resumed.some(
+                    (event) => event.kind === "button" && event.pressed,
+                ),
+            );
+            assert.ok(
+                resumed.some(
+                    (event) => event.kind === "button" && !event.pressed,
+                ),
+            );
+            assert.ok(inputs.every((batch) => batch.generation === generation));
+            inputDelay = 0;
             await view
                 .getByRole("button", { name: /^Apply —/ })
                 .click({ delay: 100 });

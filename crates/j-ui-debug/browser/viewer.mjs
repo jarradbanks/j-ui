@@ -32,7 +32,8 @@ const punctuationKeys = new Set(" :,.-−+=;\\/|?![]{}`'");
 let current = null;
 let stopped = false;
 let composing = false;
-let chain = Promise.resolve();
+const pending = [];
+let flushing = false;
 let epoch = 0;
 let queued = 0;
 let lastMove = 0;
@@ -77,42 +78,59 @@ function position(event) {
 }
 
 function send(events) {
-    if (
-        !current ||
-        queued >= 32 ||
-        (document.hidden && events[0].kind !== "reset")
-    )
+    if (!current || (document.hidden && events[0].kind !== "reset")) return;
+    if (pending.length + events.length > 256) {
+        reset();
         return;
-    const { session, frame, generation } = current;
-    const version = epoch;
-    queued += 1;
-    chain = chain
-        .then(async () => {
-            if (
-                !current ||
-                version !== epoch ||
-                current.session !== session ||
-                current.generation !== generation
-            )
-                return;
+    }
+    const started = performance.now();
+    pending.push(...events.map((event) => ({ event, started })));
+    queued = pending.length;
+    if (!flushing) void flush();
+}
+
+async function flush() {
+    flushing = true;
+    while (current && pending.length) {
+        if (performance.now() - pending[0].started > 300) {
+            reset();
+            continue;
+        }
+        const { session, frame, generation } = current;
+        const version = epoch;
+        const events = [];
+        let bytes = 256;
+        while (pending.length && events.length < 64) {
+            const size =
+                new TextEncoder().encode(JSON.stringify(pending[0].event))
+                    .length + 1;
+            if (bytes + size > 16384) break;
+            events.push(pending.shift().event);
+            bytes += size;
+        }
+        queued = pending.length + events.length;
+        try {
             await request("/input", { session, frame, generation, events });
-        })
-        .catch((error) => {
+        } catch (error) {
+            if (version !== epoch) continue;
             epoch += 1;
+            pending.length = 0;
             status.textContent = "Reconnecting";
             current = null;
-            if (error.status === 409) return;
-            surface.hidden = true;
-            message.hidden = false;
-        })
-        .finally(() => {
-            queued -= 1;
-        });
+            if (error.status !== 409) {
+                surface.hidden = true;
+                message.hidden = false;
+            }
+        }
+    }
+    queued = pending.length;
+    flushing = false;
 }
 
 function reset() {
     pointers.clear();
     epoch += 1;
+    pending.length = 0;
     send([{ kind: "reset" }]);
 }
 
@@ -195,6 +213,8 @@ async function poll() {
                 current.generation !== next.generation;
             if (changed) {
                 epoch += 1;
+                pending.length = 0;
+                current = null;
                 try {
                     await request("/input", {
                         session: next.session,
@@ -229,6 +249,7 @@ async function poll() {
         } catch {
             current = null;
             epoch += 1;
+            pending.length = 0;
             surface.hidden = true;
             message.hidden = false;
             message.textContent =
