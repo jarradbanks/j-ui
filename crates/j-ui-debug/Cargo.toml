@@ -1,0 +1,36 @@
+[package]
+name = "j-ui-debug"
+description = "Opt-in native egui display and element bridge for development."
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[features]
+default = ["bridge"]
+bridge = ["dep:serde", "dep:serde_json", "dep:png", "dep:httparse", "dep:getrandom"]
+hot-reload = ["dep:subsecond", "dep:dioxus-devtools"]
+
+[dependencies]
+egui.workspace = true
+serde = { workspace = true, optional = true }
+serde_json = { version = "1", optional = true }
+png = { version = "0.18", optional = true }
+httparse = { version = "1", optional = true }
+getrandom = { version = "0.4", optional = true }
+subsecond = { version = "0.7", optional = true }
+dioxus-devtools = { version = "0.7", optional = true }
+
+[dev-dependencies]
+tempfile = "3"
+eframe.workspace = true
+egui_kittest.workspace = true
+j-ui = { path = "../..", features = ["test-support"] }
+
+[[example]]
+name = "debug_gallery"
+required-features = ["bridge"]
