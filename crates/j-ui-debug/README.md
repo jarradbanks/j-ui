@@ -122,7 +122,14 @@ Absolute request/write deadlines also bound shutdown when a client trickles data
 are in `src/input.rs`. Coordinates are normalized, body/event counts are bounded,
 and unknown fields, invalid keys/numbers, wrong sessions, stale frames/layouts,
 and overflowing queues are rejected. A second fence checks layout, dimensions,
-and queue age on the egui thread. The viewer batches input within the same
+and queue age on the egui thread. HTTP 200 means queued, not yet applied to a
+native widget; verify the resulting native frame and its paired targets.
+Pointer transitions, drag movement before release, and repeated presses of the
+same key advance across native frames so egui can observe each action in order.
+Deferred events keep their original queue age and layout fences; text and
+compatible input still batch together. Reset/focus loss cancels held controls
+without turning a cancelled press into a click.
+The viewer batches input within the same
 64-event/16-KiB limits and cancels queued events older than 300 ms or from a
 previous layout/session, rather than replaying them after a slow request.
 Frame and pending screenshot metadata stay

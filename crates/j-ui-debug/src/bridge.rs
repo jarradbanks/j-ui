@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 
 use egui::{Context, Event, FullOutput, RawInput, Ui, ViewportId};
 
-use crate::input::{Batch, HeldInput};
+use crate::input::{Batch, HeldInput, RemoteEvent};
 use crate::nodes::{self, DomainTarget, Target};
 use crate::server::{self, Server, Shared};
 
@@ -33,6 +33,7 @@ pub(crate) struct Bridge {
     path: PathBuf,
     shared: Arc<Mutex<Shared>>,
     incoming: Mutex<mpsc::Receiver<Batch>>,
+    pending_input: Option<Batch>,
     images: mpsc::SyncSender<Capture>,
     _server: Server,
     pending: Option<Pending>,
@@ -65,6 +66,7 @@ pub(crate) fn install(ctx: &Context, app: &str, path: &Path) -> io::Result<()> {
         path: path.into(),
         shared,
         incoming: Mutex::new(incoming),
+        pending_input: None,
         images,
         _server: server,
         pending: None,
@@ -158,7 +160,7 @@ impl egui::plugin::Plugin for Bridge {
     }
 
     fn input_hook(&mut self, ctx: &Context, input: &mut RawInput) {
-        if input.viewport_id != ViewportId::ROOT {
+        if input.viewport_id != ViewportId::ROOT || ctx.current_pass_index() > 0 {
             return;
         }
         self.receive_capture(input);
@@ -174,12 +176,24 @@ impl egui::plugin::Plugin for Bridge {
         if self.held.focused && lost_focus {
             self.held.release(input);
         }
-        while let Ok(batch) = self
-            .incoming
-            .get_mut()
-            .expect("input receiver poisoned")
-            .try_recv()
-        {
+        if lost_focus {
+            self.pending_input = None;
+            while self
+                .incoming
+                .get_mut()
+                .expect("input receiver poisoned")
+                .try_recv()
+                .is_ok()
+            {}
+        }
+        let mut pressed_keys = std::collections::HashSet::new();
+        while let Some(mut batch) = self.pending_input.take().or_else(|| {
+            self.incoming
+                .get_mut()
+                .expect("input receiver poisoned")
+                .try_recv()
+                .ok()
+        }) {
             let same_size = (bounds.width() - batch.width).abs() < 1.0
                 && (bounds.height() - batch.height).abs() < 1.0;
             if batch.generation != self.generation
@@ -189,8 +203,41 @@ impl egui::plugin::Plugin for Bridge {
                 self.held.release(input);
                 continue;
             }
-            for event in batch.events {
+            // egui has one pointer hit-test/click result per frame, across all HTTP batches.
+            let boundary = batch.events.iter().position(|event| {
+                matches!(event, RemoteEvent::Button { .. } | RemoteEvent::Reset {})
+            });
+            let prefix = boundary.unwrap_or(batch.events.len());
+            let dragging = self.held.pointer_down()
+                && batch.events[..prefix]
+                    .iter()
+                    .any(|event| matches!(event, RemoteEvent::Move { .. }));
+            let mut count = match boundary {
+                Some(index) if dragging => index,
+                Some(index) => index + 1,
+                None => batch.events.len(),
+            };
+            let repeated_key = batch.events[..count].iter().position(|event| {
+                let RemoteEvent::Key {
+                    key, pressed: true, ..
+                } = event
+                else {
+                    return false;
+                };
+                egui::Key::from_name(key).is_some_and(|key| !pressed_keys.insert(key))
+            });
+            if let Some(index) = repeated_key {
+                count = index;
+            }
+            for event in batch.events.drain(..count) {
                 self.held.event(event, bounds, input);
+            }
+            if !batch.events.is_empty() {
+                self.pending_input = Some(batch);
+            }
+            if boundary.is_some() || dragging || repeated_key.is_some() {
+                ctx.request_repaint();
+                break;
             }
         }
         let disconnected = self.shared.lock().map_or(true, |shared| {
@@ -262,3 +309,7 @@ impl egui::plugin::Plugin for Bridge {
 #[cfg(test)]
 #[path = "bridge_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "pointer_tests.rs"]
+mod pointer_tests;

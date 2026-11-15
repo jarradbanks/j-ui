@@ -115,6 +115,10 @@ pub(crate) struct HeldInput {
 }
 
 impl HeldInput {
+    pub fn pointer_down(&self) -> bool {
+        !self.buttons.is_empty()
+    }
+
     pub fn event(&mut self, event: RemoteEvent, bounds: egui::Rect, input: &mut egui::RawInput) {
         use egui::{Event, Key, PointerButton};
         if !matches!(&event, RemoteEvent::Reset { .. }) {
@@ -190,6 +194,12 @@ impl HeldInput {
 
     pub fn release(&mut self, input: &mut egui::RawInput) {
         use egui::Event;
+        if self.pointer_down() {
+            // Cancel egui's pending click before releasing, without changing the drag endpoint.
+            input.events.push(Event::PointerMoved(
+                self.position + egui::vec2(100_000.0, 100_000.0),
+            ));
+        }
         for button in self.buttons.drain(..) {
             input.events.push(Event::PointerButton {
                 pos: self.position,
