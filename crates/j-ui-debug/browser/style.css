@@ -1,0 +1,106 @@
+:root {
+    color-scheme: dark;
+    --ground: #0a0b0d;
+    --ink: #edeef1;
+    --edge: #232529;
+    --accent: #2368c9;
+}
+* {
+    box-sizing: border-box;
+}
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+}
+body {
+    display: flex;
+    flex-direction: column;
+    color: var(--ink);
+    background: var(--ground);
+    font:
+        13px system-ui,
+        sans-serif;
+}
+header {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 40px;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--edge);
+}
+header strong {
+    font-size: 13px;
+}
+#status {
+    margin-left: auto;
+    opacity: 0.75;
+}
+#hint {
+    margin: 0;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--edge);
+    color: #adb1b8;
+}
+main {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    place-items: center;
+    padding: 12px;
+}
+#surface {
+    position: relative;
+}
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    outline: none;
+    touch-action: none;
+}
+#targets {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+#targets > div {
+    position: absolute;
+    padding: 0;
+    margin: 0;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: transparent;
+    pointer-events: auto;
+    overflow: hidden;
+    font-size: 1px;
+}
+main:focus-within {
+    box-shadow: inset 0 0 0 2px var(--accent);
+}
+#message {
+    max-width: 360px;
+    margin: 0;
+    text-align: center;
+    line-height: 1.5;
+}
+#keyboard {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    left: 12px;
+    bottom: 12px;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    resize: none;
+}
+[hidden] {
+    display: none !important;
+}

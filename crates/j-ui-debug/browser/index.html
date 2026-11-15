@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="stylesheet" href="/style.css" />
+        <title>Native App</title>
+    </head>
+    <body>
+        <header>
+            <strong>Native App</strong
+            ><span id="status" role="status">Connecting</span>
+        </header>
+        <p id="hint">
+            Use Orca’s browser Annotate and Draw tools to give feedback.
+        </p>
+        <main id="stage">
+            <div id="surface" hidden>
+                <canvas
+                    id="screen"
+                    tabindex="0"
+                    role="application"
+                    aria-label="Native app"
+                    aria-description="Press Control, Alt and Escape to release keyboard focus."
+                ></canvas>
+                <div id="targets" aria-label="Native Elements"></div>
+            </div>
+            <p id="message">Waiting for the native app.</p>
+            <textarea
+                id="keyboard"
+                aria-label="Native app keyboard input"
+                spellcheck="false"
+                autocomplete="off"
+            ></textarea>
+        </main>
+        <script type="module" src="/viewer.mjs"></script>
+    </body>
+</html>

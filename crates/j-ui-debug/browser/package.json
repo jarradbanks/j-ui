@@ -1,0 +1,13 @@
+{
+  "name": "j-ui-debug-viewer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/protocol.test.mjs",
+    "test:browser": "node test/browser.cjs"
+  },
+  "devDependencies": {
+    "playwright-core": "1.65.0",
+    "prettier": "3.8.1"
+  }
+}
