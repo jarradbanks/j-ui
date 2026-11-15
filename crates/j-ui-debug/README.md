@@ -53,7 +53,7 @@ automatically with real labels, native roles, clipped rectangles, layer order,
 and egui IDs. Give dynamic rows explicit IDs, for example a child scope with
 `UiBuilder::id(ui.make_persistent_id(domain))`, or the widget's explicit ID API.
 An egui auto ID has exactly egui's lifetime; this package cannot make unstable app IDs stable.
-Generic containers, text runs, hidden/empty/clipped elements, and arbitrary
+Generic containers, text runs, hidden elements, empty/clipped rectangles, and arbitrary
 painted pixels do not become semantic widgets. Unlabelled custom painting needs
 explicit registration:
 

@@ -20,6 +20,7 @@ fn frame(ctx: &Context, show: bool) -> FullOutput {
             ui.scope_builder(egui::UiBuilder::new().id(enabled_id), |ui| {
                 ui.checkbox(&mut enabled, "Enabled")
             });
+            ui.text_edit_singleline(&mut String::new());
         });
     });
     output.textures_delta.clear();
@@ -51,6 +52,11 @@ fn plugin_is_idempotent_discovers_nodes_and_removes_dynamic_targets() {
         .unwrap();
     assert_eq!(checkbox.role, "CheckBox");
     assert!(checkbox.path.starts_with("egui/") && checkbox.source.is_none());
+    assert!(
+        targets
+            .iter()
+            .any(|target| target.role == "TextInput" && target.label.is_empty())
+    );
     frame(&ctx, false);
     let targets = ctx
         .with_plugin::<Bridge, _>(|bridge| bridge.targets.clone())

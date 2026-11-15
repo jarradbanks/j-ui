@@ -70,9 +70,6 @@ pub(crate) fn collect(
             continue;
         };
         let label = label(node, &nodes, 0);
-        if label.is_empty() {
-            continue;
-        }
         let domain = custom.iter().find(|target| target.id == egui_id);
         let Some(mut target) = from_response(ctx, &response, &label) else {
             continue;
