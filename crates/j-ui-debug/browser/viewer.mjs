@@ -7,6 +7,28 @@ const message = document.getElementById("message");
 const root = document.getElementById("targets");
 const proxies = new Map();
 const pointers = new Set();
+const namedKeys = new Set([
+    "ArrowDown",
+    "ArrowLeft",
+    "ArrowRight",
+    "ArrowUp",
+    "Escape",
+    "Tab",
+    "Backspace",
+    "Enter",
+    "Insert",
+    "Delete",
+    "Home",
+    "End",
+    "PageUp",
+    "PageDown",
+    "Copy",
+    "Cut",
+    "Paste",
+    "Space",
+    "BrowserBack",
+]);
+const punctuationKeys = new Set(" :,.-−+=;\\/|?![]{}`'");
 let current = null;
 let stopped = false;
 let composing = false;
@@ -290,13 +312,22 @@ function key(event, pressed) {
         send([{ kind: "modifiers", modifiers: modifiers(event) }]);
         return;
     }
-    if (event.key.length === 1 && !event.ctrlKey && !event.metaKey) return;
-    event.preventDefault();
-    const key = event.key.length === 1 ? event.key.toUpperCase() : event.key;
+    const printable = event.key.length === 1;
+    const key = event.key === " " ? "Space" : event.key.toUpperCase();
+    const letterOrNumber = /^[A-Z0-9]$/.test(key);
+    const functionKey = /^F([1-9]|[12][0-9]|3[0-5])$/.test(key);
+    const recognized =
+        letterOrNumber ||
+        punctuationKeys.has(event.key) ||
+        functionKey ||
+        namedKeys.has(event.key);
+    if (!recognized) return;
+    if (!printable || event.ctrlKey || event.metaKey) event.preventDefault();
+    const logicalKey = printable ? key : event.key;
     send([
         {
             kind: "key",
-            key,
+            key: logicalKey,
             pressed,
             repeat: event.repeat,
             modifiers: modifiers(event),

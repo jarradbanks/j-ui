@@ -264,4 +264,94 @@ mod tests {
         );
         assert!(serde_json::from_str::<RemoteEvent>(r#"{"kind":"reset","extra":true}"#).is_err());
     }
+
+    #[test]
+    fn native_printable_keys_activate_buttons_shortcuts_and_insert_text_once() {
+        #[derive(Default)]
+        struct State {
+            focus_editor: bool,
+            activations: usize,
+            shortcuts: usize,
+            text: String,
+        }
+        fn apply(harness: &mut egui_kittest::Harness<'_, State>, held: &mut HeldInput, json: &str) {
+            let events: Vec<RemoteEvent> = serde_json::from_str(json).unwrap();
+            let mut input = egui::RawInput::default();
+            let bounds = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1280.0, 800.0));
+            for event in events {
+                held.event(event, bounds, &mut input);
+            }
+            harness.input_mut().events.extend(input.events);
+            harness.run();
+        }
+        let mut harness = egui_kittest::Harness::builder()
+            .with_size([1280.0, 800.0])
+            .build_ui_state(
+                |ui, state: &mut State| {
+                    let button = ui.button("Apply");
+                    if button.clicked() {
+                        state.activations += 1;
+                    }
+                    let editor = ui.text_edit_singleline(&mut state.text);
+                    if state.focus_editor {
+                        editor.request_focus();
+                    } else {
+                        button.request_focus();
+                        if ui.input(|input| input.key_pressed(egui::Key::A)) {
+                            state.shortcuts += 1;
+                        }
+                    }
+                },
+                State::default(),
+            );
+        let mut held = HeldInput::default();
+        apply(
+            &mut harness,
+            &mut held,
+            r#"[{"kind":"key","key":"Space","pressed":true}]"#,
+        );
+        apply(
+            &mut harness,
+            &mut held,
+            r#"[{"kind":"key","key":"Space","pressed":false}]"#,
+        );
+        assert_eq!(
+            harness.state().activations,
+            1,
+            "Space must activate the focused native button"
+        );
+        apply(
+            &mut harness,
+            &mut held,
+            r#"[{"kind":"key","key":"A","pressed":true}]"#,
+        );
+        apply(
+            &mut harness,
+            &mut held,
+            r#"[{"kind":"key","key":"A","pressed":false}]"#,
+        );
+        assert_eq!(
+            harness.state().shortcuts,
+            1,
+            "plain A must reach native shortcut handling"
+        );
+        harness.state_mut().focus_editor = true;
+        harness.run_steps(2);
+        apply(
+            &mut harness,
+            &mut held,
+            r#"[{"kind":"key","key":"A","pressed":true},{"kind":"text","text":"a"}]"#,
+        );
+        apply(
+            &mut harness,
+            &mut held,
+            r#"[{"kind":"key","key":"A","pressed":false}]"#,
+        );
+        assert_eq!(
+            harness.state().text,
+            "a",
+            "native key events must not duplicate beforeinput text"
+        );
+        assert_eq!(harness.state().shortcuts, 1);
+    }
 }

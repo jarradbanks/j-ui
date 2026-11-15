@@ -70,6 +70,13 @@ order and AccessKit child order determine proxy stacking. Arbitrary custom paint
 reordering within one layer is not discoverable; register the domain explicitly
 and avoid overlapping responses when semantic order differs from paint order.
 
+Explicit registrations preserve the supplied response's visible `rect` and
+`interact_rect`, intersect them with the caller's clip rectangle, then apply the
+native layer transform and viewport clipping. This supports timeline/domain
+widgets whose native interaction area extends beyond their painted lane. Parent
+registrations stay beneath semantic children. Recognized printable logical keys
+and Space retain their native press/release events alongside text/IME delivery.
+
 ## Launch the Browser Viewer
 
 Node 22+ runs the viewer with no production npm dependencies:

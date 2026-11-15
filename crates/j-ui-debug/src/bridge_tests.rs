@@ -78,6 +78,116 @@ fn plugin_is_idempotent_discovers_nodes_and_removes_dynamic_targets() {
 }
 
 #[test]
+fn explicit_targets_keep_caller_clipping_and_parent_targets_stay_below_children() {
+    let directory = tempfile::tempdir().unwrap();
+    let ctx = Context::default();
+    install(&ctx, "clipping", &directory.path().join("connection.json")).unwrap();
+    let mut output = ctx.run_ui(
+        RawInput {
+            screen_rect: Some(egui::Rect::from_min_size(
+                egui::Pos2::ZERO,
+                egui::vec2(120.0, 100.0),
+            )),
+            ..Default::default()
+        },
+        |ui| {
+            let scope = ui.scope(|ui| {
+                ui.set_clip_rect(egui::Rect::from_min_max(
+                    egui::pos2(30.0, 10.0),
+                    egui::pos2(100.0, 80.0),
+                ));
+                let mut response = ui.add_sized([180.0, 90.0], egui::Button::new("Clip"));
+                response.rect =
+                    egui::Rect::from_min_max(egui::pos2(20.0, 5.0), egui::pos2(130.0, 75.0));
+                response.interact_rect =
+                    egui::Rect::from_min_max(egui::pos2(15.0, 20.0), egui::pos2(110.0, 90.0));
+                crate::target(ui, &response, "timeline/clip", "Clip");
+                let mut hidden = ui.button("Hidden");
+                hidden.rect = egui::Rect::NOTHING;
+                crate::target(ui, &hidden, "timeline/hidden", "Hidden");
+            });
+            crate::target(ui, &scope.response, "timeline/lane", "Lane");
+        },
+    );
+    output.textures_delta.clear();
+    let targets = ctx
+        .with_plugin::<Bridge, _>(|bridge| bridge.targets.clone())
+        .unwrap();
+    let clip = targets
+        .iter()
+        .find(|target| target.path == "timeline/clip")
+        .unwrap();
+    for (actual, expected) in clip
+        .rect
+        .into_iter()
+        .zip([30.0 / 120.0, 0.2, 70.0 / 120.0, 0.55])
+    {
+        assert!(
+            (actual - expected).abs() < 0.0001,
+            "caller clipping must override canonical response geometry"
+        );
+    }
+    assert_eq!(clip.role, "Button");
+    assert!(
+        !targets
+            .iter()
+            .any(|target| target.path == "timeline/hidden" || target.label == "Hidden")
+    );
+    let lane = targets
+        .iter()
+        .find(|target| target.path == "timeline/lane")
+        .unwrap();
+    assert!(
+        lane.z_order < clip.z_order,
+        "a registered parent must not cover its semantic children"
+    );
+}
+
+#[test]
+fn screenshots_use_metadata_from_the_final_layout_pass() {
+    let directory = tempfile::tempdir().unwrap();
+    let ctx = Context::default();
+    install(&ctx, "passes", &directory.path().join("connection.json")).unwrap();
+    let mut expected = None;
+    let mut output = ctx.run_ui(
+        RawInput {
+            screen_rect: Some(egui::Rect::from_min_size(
+                egui::Pos2::ZERO,
+                egui::vec2(1280.0, 800.0),
+            )),
+            ..Default::default()
+        },
+        |ui| {
+            let first_pass = ui.ctx().current_pass_index() == 0;
+            if !first_pass {
+                ui.add_space(80.0);
+            }
+            let response = ui.button("Apply");
+            crate::target(ui, &response, "passes/apply", "Apply");
+            if first_pass {
+                ui.ctx().request_discard("measure layout");
+            } else {
+                expected = Some(response.rect.top() / 800.0);
+            }
+        },
+    );
+    output.textures_delta.clear();
+    ctx.with_plugin::<Bridge, _>(|bridge| {
+        let pending = bridge.pending.as_ref().unwrap();
+        let target = pending
+            .targets
+            .iter()
+            .find(|target| target.path == "passes/apply")
+            .unwrap();
+        assert_eq!(
+            target.rect[1],
+            expected.unwrap(),
+            "discarded layout metadata must not be paired with the final painted frame"
+        );
+    });
+}
+
+#[test]
 fn screenshots_keep_matching_metadata_and_leave_app_screenshots_alone() {
     let directory = tempfile::tempdir().unwrap();
     let ctx = Context::default();

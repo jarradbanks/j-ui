@@ -226,6 +226,62 @@ async function check() {
                     assert.equal(target.hit, target.id);
                 }
             }
+            await view.locator("#keyboard").focus();
+            inputs.length = 0;
+            await view.keyboard.press("Space");
+            await view.keyboard.press("a");
+            await view.keyboard.insertText("é");
+            await view
+                .locator("#keyboard")
+                .evaluate((node) =>
+                    node.dispatchEvent(
+                        new CompositionEvent("compositionstart"),
+                    ),
+                );
+            await view.locator("#keyboard").dispatchEvent("keydown", {
+                key: "Process",
+                isComposing: true,
+            });
+            await view.locator("#keyboard").dispatchEvent("beforeinput", {
+                data: "漢",
+                isComposing: true,
+            });
+            await view
+                .locator("#keyboard")
+                .evaluate((node) =>
+                    node.dispatchEvent(
+                        new CompositionEvent("compositionend", { data: "漢" }),
+                    ),
+                );
+            await view.waitForTimeout(200);
+            const keyboardEvents = inputs.flatMap((batch) => batch.events);
+            for (const key of ["Space", "A"]) {
+                assert.ok(
+                    keyboardEvents.some(
+                        (event) =>
+                            event.kind === "key" &&
+                            event.key === key &&
+                            event.pressed,
+                    ),
+                );
+                assert.ok(
+                    keyboardEvents.some(
+                        (event) =>
+                            event.kind === "key" &&
+                            event.key === key &&
+                            !event.pressed,
+                    ),
+                );
+            }
+            for (const text of [" ", "a", "é", "漢"]) {
+                assert.equal(
+                    keyboardEvents.filter(
+                        (event) => event.kind === "text" && event.text === text,
+                    ).length,
+                    1,
+                    `text ${JSON.stringify(text)}: ${JSON.stringify(keyboardEvents)}`,
+                );
+            }
             await view
                 .getByRole("button", { name: /^Apply —/ })
                 .click({ delay: 100 });

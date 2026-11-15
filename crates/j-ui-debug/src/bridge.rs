@@ -84,7 +84,7 @@ pub(crate) fn install(ctx: &Context, app: &str, path: &Path) -> io::Result<()> {
 impl Bridge {
     pub fn target(
         &mut self,
-        _ui: &Ui,
+        ui: &Ui,
         response: &egui::Response,
         path: &str,
         label: &str,
@@ -92,7 +92,7 @@ impl Bridge {
     ) {
         if self.custom.len() < 2048 {
             self.custom
-                .push(DomainTarget::new(response, path, label, location));
+                .push(DomainTarget::new(ui, response, path, label, location));
         }
     }
 
@@ -205,7 +205,10 @@ impl egui::plugin::Plugin for Bridge {
     }
 
     fn output_hook(&mut self, ctx: &Context, output: &mut FullOutput) {
-        if ctx.viewport_id() != ViewportId::ROOT {
+        let discarded = output.platform_output.requested_discard()
+            && output.platform_output.num_completed_passes
+                < ctx.options(|options| options.max_passes.get());
+        if ctx.viewport_id() != ViewportId::ROOT || discarded {
             return;
         }
         let targets = nodes::collect(

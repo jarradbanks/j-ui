@@ -17,19 +17,47 @@ pub(crate) struct Target {
 }
 
 pub(crate) struct DomainTarget {
-    id: egui::Id,
+    geometry: Geometry,
     path: String,
     label: String,
     source: String,
 }
 
 impl DomainTarget {
-    pub fn new(response: &Response, path: &str, label: &str, location: &Location<'_>) -> Self {
+    pub fn new(
+        ui: &egui::Ui,
+        response: &Response,
+        path: &str,
+        label: &str,
+        location: &Location<'_>,
+    ) -> Self {
         Self {
-            id: response.id,
+            geometry: Geometry::new(response, ui.clip_rect()),
             path: path.chars().take(512).collect(),
             label: label.chars().take(512).collect(),
             source: format!("{}:{}", location.file(), location.line()),
+        }
+    }
+}
+
+// A Response owns its Context; retain local geometry without creating a plugin/context cycle.
+struct Geometry {
+    id: egui::Id,
+    layer_id: egui::LayerId,
+    rect: Rect,
+    enabled: bool,
+}
+
+impl Geometry {
+    fn new(response: &Response, clip: Rect) -> Self {
+        Self {
+            id: response.id,
+            layer_id: response.layer_id,
+            rect: response
+                .rect
+                .intersect(response.interact_rect)
+                .intersect(clip),
+            enabled: response.enabled(),
         }
     }
 }
@@ -49,7 +77,7 @@ pub(crate) fn collect(
         visit(tree.root, &nodes, &mut ordered, 0);
     }
     let mut targets = Vec::new();
-    for id in ordered {
+    for (order, id) in ordered.iter().copied().enumerate() {
         let node = nodes[&id];
         if id.0 == 0
             || node.is_hidden()
@@ -70,8 +98,10 @@ pub(crate) fn collect(
             continue;
         };
         let label = label(node, &nodes, 0);
-        let domain = custom.iter().find(|target| target.id == egui_id);
-        let Some(mut target) = from_response(ctx, &response, &label) else {
+        let domain = custom.iter().find(|target| target.geometry.id == egui_id);
+        let geometry = Geometry::new(&response, Rect::EVERYTHING);
+        let geometry = domain.map_or(&geometry, |domain| &domain.geometry);
+        let Some(mut target) = from_geometry(ctx, geometry, &label) else {
             continue;
         };
         target.role = format!("{:?}", node.role());
@@ -83,21 +113,21 @@ pub(crate) fn collect(
         }
         let layer = layers
             .iter()
-            .position(|layer| *layer == response.layer_id)
+            .position(|layer| *layer == geometry.layer_id)
             .unwrap_or(0);
-        targets.push((layer, target));
+        targets.push((layer, order, target));
         if targets.len() >= 2048 {
             break;
         }
     }
     for domain in custom {
-        if targets.iter().any(|(_, target)| target.path == domain.path) {
+        if targets
+            .iter()
+            .any(|(_, _, target)| target.path == domain.path)
+        {
             continue;
         }
-        let Some(response) = ctx.read_response(domain.id) else {
-            continue;
-        };
-        let Some(mut target) = from_response(ctx, &response, &domain.label) else {
+        let Some(mut target) = from_geometry(ctx, &domain.geometry, &domain.label) else {
             continue;
         };
         target.id = format!("domain/{}", domain.path);
@@ -105,15 +135,19 @@ pub(crate) fn collect(
         target.source = Some(domain.source.clone());
         let layer = layers
             .iter()
-            .position(|layer| *layer == response.layer_id)
+            .position(|layer| *layer == domain.geometry.layer_id)
             .unwrap_or(0);
-        targets.push((layer, target));
+        let order = ordered
+            .iter()
+            .position(|id| id.0 == domain.geometry.id.value())
+            .unwrap_or(ordered.len());
+        targets.push((layer, order, target));
     }
-    targets.sort_by_key(|(layer, _)| *layer);
+    targets.sort_by_key(|(layer, order, _)| (*layer, *order));
     targets
         .into_iter()
         .enumerate()
-        .map(|(order, (_, mut target))| {
+        .map(|(order, (_, _, mut target))| {
             target.z_order = order;
             target
         })
@@ -159,16 +193,16 @@ fn label(
     labels.join(" ").chars().take(512).collect()
 }
 
-fn from_response(ctx: &Context, response: &Response, label: &str) -> Option<Target> {
+fn from_geometry(ctx: &Context, geometry: &Geometry, label: &str) -> Option<Target> {
     let bounds = ctx.viewport_rect();
     let transform = ctx
-        .layer_transform_to_global(response.layer_id)
+        .layer_transform_to_global(geometry.layer_id)
         .unwrap_or_default();
-    let rect = (transform * response.interact_rect).intersect(bounds);
+    let rect = (transform * geometry.rect).intersect(bounds);
     if !rect.is_positive() || !rect.is_finite() || !bounds.is_positive() {
         return None;
     }
-    let id = format!("{:016x}", response.id.value());
+    let id = format!("{:016x}", geometry.id.value());
     Some(Target {
         path: format!("egui/{id}"),
         id,
@@ -177,8 +211,8 @@ fn from_response(ctx: &Context, response: &Response, label: &str) -> Option<Targ
         source: None,
         rect: normalized(rect, bounds),
         z_order: 0,
-        enabled: response.enabled()
-            && ctx.memory(|memory| memory.allows_interaction(response.layer_id)),
+        enabled: geometry.enabled
+            && ctx.memory(|memory| memory.allows_interaction(geometry.layer_id)),
     })
 }
 
