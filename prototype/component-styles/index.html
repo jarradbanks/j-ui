@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="en" data-style="soft" data-theme="dark" data-font="figtree">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Component Styles</title>
+<style>
+/* Every value here maps to one j-ui token (see the Token Map panel). Only solid fills,
+   1px strokes, corner radii and one overlay shadow are used, so egui can paint all of it. */
+@font-face { font-family: Inter; font-weight: 400; src: local("Inter"), url(../../assets/Inter-Regular.ttf); }
+@font-face { font-family: Inter; font-weight: 500; src: local("Inter Medium"), url(../../assets/Inter-Medium.ttf); }
+@font-face { font-family: Inter; font-weight: 600; src: local("Inter SemiBold"), url(../../assets/Inter-SemiBold.ttf); }
+[data-font=inter] { --font: Inter, system-ui, sans-serif; }
+@font-face { font-family: Figtree; font-weight: 300 900; src: url(fonts/Figtree.ttf); }
+[data-font=figtree] { --font: Figtree, system-ui, sans-serif; }
+
+[data-theme=dark] {
+  --blue:#2368C9; --blue-soft:#152133; --blue-hover:#2C70D3; --light-blue:#7AACF6;
+  --red:#EC5B57; --red-soft:#311E1F; --amber:#F2AF48; --amber-soft:#312A1D; --green:#4EBE7D; --green-soft:#1A2C24;
+  --ground:#0A0B0D; --panel:#121416; --raised:#1C1E21; --field:#0D0E11; --border:#232529; --border-strong:#36383C;
+  --ink:#EDEEF1; --ink-2:#ADB1B8; --ink-3:#82868E; --ink-4:#5A5E63;
+  --shadow: 0 8px 24px rgba(0,0,0,.4); --sel: var(--border);
+}
+[data-theme=light] {
+  --blue:#2368C9; --blue-soft:#DDE6F2; --blue-hover:#2C70D3; --light-blue:#1D5BB5;
+  --red:#C03632; --red-soft:#F1E4E4; --amber:#8A5A00; --amber-soft:#E9E4DA; --green:#1E7A46; --green-soft:#DCE8E3;
+  --ground:#E6E7EA; --panel:#F6F7F8; --raised:#FFFFFF; --field:#FFFFFF; --border:#D9DBDF; --border-strong:#B4B7BD;
+  --ink:#16181B; --ink-2:#3F434A; --ink-3:#5E6269; --ink-4:#9A9EA5;
+  --shadow: 0 8px 24px rgba(0,0,0,.4); --sel: var(--border);
+}
+
+/* Current: j-ui 0.4 as it is. Compact, bordered recessed fields. */
+[data-style=current] {
+  --r-small:4px; --r-control:6px; --r-panel:8px; --r-dialog:12px;
+  --control:24px; --header:32px; --bar:40px; --inset:12px; --gap:8px; --pad-x:10px; --field-x:8px; --dialog-pad:16px;
+  --body:12px; --small:10px; --title:14px; --headline:16px; --display:22px;
+  --icon:16px; --check:14px; --badge:20px; --track:4px; --thumb:12px;
+  --panel-fill:var(--panel); --panel-border:var(--border);
+  --field-fill:var(--field); --field-border:var(--border);
+  --btn-fill:var(--raised); --btn-border:var(--border);
+  --seg-track:var(--field); --seg-border:var(--border); --seg-on:var(--border); --card-fill:var(--raised);
+  --edge:var(--border); --rule:var(--border); --panel-pad:var(--inset); --panel-head:var(--header); --panel-title:var(--body); --section-gap:16px; --rail-fill:var(--panel);
+}
+/* Line and Soft share the larger suite scale: 36 controls, 14 body, 16 inset. */
+[data-style=line], [data-style=soft] {
+  --control:36px; --header:48px; --bar:56px; --inset:16px; --gap:12px; --pad-x:16px; --field-x:12px; --dialog-pad:24px;
+  --body:14px; --small:12px; --title:16px; --headline:20px; --display:28px;
+  --icon:18px; --check:18px; --badge:24px; --track:6px; --thumb:16px;
+  --seg-track:var(--ground); --seg-border:transparent; --seg-on:var(--raised); --card-fill:var(--raised);
+}
+/* Line: one continuous surface as in jclip. No panel boxes; hairlines only where regions meet. */
+[data-style=line] {
+  --r-small:6px; --r-control:8px; --r-panel:12px; --r-dialog:16px;
+  --panel-fill:transparent; --panel-border:transparent; --edge:var(--border); --rule:transparent;
+  --panel-pad:0px; --panel-head:28px; --panel-title:var(--title); --section-gap:40px; --rail-fill:transparent;
+  --field-fill:var(--field); --field-border:var(--border);
+  --btn-fill:var(--raised); --btn-border:var(--border);
+  --seg-track:transparent; --seg-border:var(--border); --card-fill:var(--panel);
+}
+[data-style=line][data-theme=light] { --sel: var(--raised); }
+/* Soft: borderless filled panels, tone steps carry the structure, rounder. */
+[data-style=soft] {
+  --r-small:8px; --r-control:10px; --r-panel:16px; --r-dialog:20px;
+  --panel-fill:var(--panel); --panel-border:transparent; --edge:transparent; --rule:transparent;
+  --panel-pad:var(--inset); --panel-head:var(--header); --panel-title:var(--body); --section-gap:16px; --rail-fill:transparent;
+  --field-fill:var(--ground); --field-border:transparent;
+  --btn-fill:var(--border); --btn-border:transparent;
+}
+
+* { box-sizing: border-box; margin: 0; }
+body { background: var(--ground); color: var(--ink); font: 400 var(--body)/1.45 var(--font); font-variant-numeric: tabular-nums; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; }
+:focus-visible { outline: none; }
+/* Buttons, tabs and rows get no ring. Keyboard focus reuses the hover look so Tab still shows where you are;
+   only fields and the small check controls draw a ring, and it follows their own corner radius. */
+.btn.secondary:focus-visible, .btn.ghost:focus-visible, .rail > a:focus-visible, .menu > button:focus-visible, .table > button:focus-visible, .pills > button:focus-visible, .seg > button:focus-visible { background: var(--sel); }
+.btn.primary:focus-visible { background: var(--blue-hover); }
+.tabs > button:focus-visible, .section:focus-visible { color: var(--ink); }
+.opt:focus-visible .box, .opt:focus-visible .track { box-shadow: 0 0 0 3px var(--blue-soft); border-color: var(--light-blue); }
+input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px var(--blue-soft); }
+input[type=range]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px var(--blue-soft); }
+svg.i { width: var(--icon); height: var(--icon); flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.muted { color: var(--ink-3); }
+.row { display: flex; align-items: center; gap: var(--gap); flex-wrap: wrap; }
+.stack { display: flex; flex-direction: column; gap: var(--gap); }
+
+/* egui: TextFormat::extra_letter_spacing on the semibold roles. */
+h1, h2, h3, .brand, .card > header b, .type span[style*="600"] { letter-spacing: -0.01em; }
+.app { display: grid; grid-template-columns: 232px 1fr; min-height: 100vh; }
+.content { min-width: 0; }
+.bar { position: sticky; top: 0; z-index: 10; height: var(--bar); padding: 0 32px; display: flex; align-items: center; gap: 12px; background: var(--ground); border-bottom: 1px solid var(--edge); }
+.bar .field { background: var(--panel); }
+.bar h1 { font: 600 var(--headline)/1 var(--font); margin-right: auto; }
+main { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: var(--section-gap); padding: 28px 32px 48px; }
+section { scroll-margin-top: calc(var(--bar) + 16px); }
+
+.rail { position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 0 12px 12px; display: flex; flex-direction: column; gap: 2px; background: var(--rail-fill); border-right: 1px solid var(--edge); }
+.rail > .brand { height: var(--bar); padding: 0 10px; display: flex; align-items: center; flex: none; font: 600 var(--title)/1 var(--font); }
+.rail > span { height: var(--control); padding: 0 10px; display: flex; align-items: center; flex: none; font-size: var(--small); color: var(--ink-3); }
+.rail > a { height: max(28px, var(--control)); padding: 0 10px; display: flex; align-items: center; flex: none; border-radius: var(--r-control); color: var(--ink-2); text-decoration: none; line-height: 1; }
+.rail > a:hover { background: var(--sel); }
+.rail > [aria-selected=true] { background: var(--sel); color: var(--ink); font-weight: 500; }
+
+.panel { background: var(--panel-fill); border: 1px solid var(--panel-border); border-radius: var(--r-panel); min-width: 0; }
+.panel > header { height: var(--panel-head); padding: 0 var(--panel-pad); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--rule); }
+.panel h2 { font: 600 var(--panel-title)/1 var(--font); margin-right: auto; }
+.panel > .stack { padding: max(12px, var(--panel-pad)) var(--panel-pad) var(--panel-pad); }
+.wide { grid-column: 1 / -1; }
+
+.btn { height: var(--control); padding: 0 var(--pad-x); border: 1px solid transparent; border-radius: var(--r-control); display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 500; line-height: 1; white-space: nowrap; }
+.btn.primary { background: var(--blue); color: #fff; }
+.btn.primary:hover { background: var(--blue-hover); }
+.btn.primary:active { background: #215DB3; }
+.btn.secondary { background: var(--btn-fill); border-color: var(--btn-border); }
+.btn.secondary:hover, .btn.ghost:hover { background: var(--raised); }
+.btn.ghost { color: var(--ink-2); }
+.btn.destructive { background: var(--red-soft); color: var(--red); }
+.btn.icon { width: var(--control); padding: 0; }
+.btn:disabled { color: var(--ink-4); cursor: default; background: var(--btn-fill); border-color: var(--btn-border); }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.field { height: var(--control); padding: 0 var(--field-x); display: flex; align-items: center; gap: 8px; background: var(--field-fill); border: 1px solid var(--field-border); border-radius: var(--r-control); position: relative; }
+/* The ring is a second rect stroke in egui, drawn 3px outside the field. */
+.field:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+.field.error { border-color: var(--red); }
+.field input, .field select { flex: 1; min-width: 0; height: 100%; border: 0; background: none; outline: none; appearance: none; }
+.field ::placeholder { color: var(--ink-3); }
+.field > svg, .field > span { color: var(--ink-3); }
+.help { font-size: var(--small); color: var(--red); }
+
+.seg { height: var(--control); padding: 2px; display: inline-flex; gap: 2px; background: var(--seg-track); border: 1px solid var(--seg-border); border-radius: var(--r-control); }
+.seg > button { padding: 0 calc(var(--pad-x) - 2px); border-radius: calc(var(--r-control) - 2px); color: var(--ink-2); font-weight: 500; line-height: 1; }
+.seg > [aria-selected=true] { background: var(--seg-on); color: var(--ink); }
+.pills { display: inline-flex; gap: 4px; }
+.pills > button { height: var(--control); padding: 0 var(--pad-x); border-radius: 999px; color: var(--ink-2); font-weight: 500; line-height: 1; }
+.pills > [aria-selected=true] { background: var(--sel); color: var(--ink); }
+.tabs { display: flex; gap: 20px; border-bottom: 1px solid var(--border); }
+.tabs > button { height: var(--header); color: var(--ink-3); font-weight: 500; line-height: 1; display: inline-flex; align-items: center; border: solid transparent; border-width: 2px 0; margin-bottom: -1px; }
+.tabs > [aria-selected=true] { color: var(--ink); border-bottom-color: var(--ink); }
+
+.opt { height: var(--control); display: inline-flex; align-items: center; gap: 8px; line-height: 1; }
+.opt .box { width: var(--check); height: var(--check); flex: none; display: grid; place-items: center; border: 1px solid var(--border-strong); border-radius: var(--r-small); }
+.opt .box svg { display: block; width: calc(var(--check) - 4px); height: calc(var(--check) - 4px); stroke-width: 3; color: #fff; visibility: hidden; }
+.opt[role=radio] .box { border-radius: 50%; }
+.opt[role=checkbox][aria-checked=true] .box { background: var(--blue); border-color: var(--blue); }
+.opt[aria-checked=true] .box svg { visibility: visible; }
+.opt[role=radio][aria-checked=true] .box { border: calc(var(--check) / 3.5) solid var(--blue); background: #fff; }
+.opt .track { width: calc(var(--check) * 2 - 4px); height: var(--check); flex: none; padding: 2px; border-radius: var(--check); background: var(--border-strong); display: flex; }
+.opt .track::after { content: ""; width: calc(var(--check) - 4px); height: calc(var(--check) - 4px); border-radius: 50%; background: #fff; }
+.opt[aria-checked=true] .track { background: var(--blue); justify-content: flex-end; }
+
+/* The hard-stop gradient is two solid rects in egui: filled part and rest of the track. */
+input[type=range] { appearance: none; width: 100%; height: calc(var(--thumb) + 4px); background: none; }
+input[type=range]::-webkit-slider-runnable-track { height: var(--track); border-radius: 3px; background: linear-gradient(to right, var(--blue) var(--at), var(--border-strong) var(--at)); }
+input[type=range]::-webkit-slider-thumb { appearance: none; width: var(--thumb); height: var(--thumb); margin-top: calc((var(--track) - var(--thumb)) / 2); border-radius: 50%; background: var(--ink); }
+input[type=range]::-moz-range-track { height: var(--track); border-radius: 3px; background: var(--border-strong); }
+input[type=range]::-moz-range-progress { height: var(--track); border-radius: 3px; background: var(--blue); }
+input[type=range]::-moz-range-thumb { width: var(--thumb); height: var(--thumb); border: 0; border-radius: 50%; background: var(--ink); }
+.progress { height: var(--track); border-radius: 3px; background: var(--border-strong); }
+.progress > div { height: 100%; border-radius: 3px; background: var(--blue); }
+.between { display: flex; justify-content: space-between; }
+
+.menu { background: var(--raised); border: 1px solid var(--border); border-radius: var(--r-panel); padding: 4px; box-shadow: var(--shadow); }
+.menu > * { height: var(--control); width: 100%; padding: 0 var(--field-x); display: flex; align-items: center; gap: 8px; border-radius: var(--r-small); text-align: left; line-height: 1; }
+.menu > button:hover, .menu > .lit { background: var(--border); }
+.menu > :disabled { color: var(--ink-4); cursor: default; background: none; }
+.menu > hr { height: 1px; padding: 0; margin: 4px 0; border: 0; border-radius: 0; background: var(--border); }
+.menu .check { width: var(--icon); height: var(--icon); }
+.menu kbd, .kbd { margin-left: auto; font: inherit; color: var(--ink-3); }
+.menu .hit { color: var(--light-blue); font-weight: 500; }
+.dd { position: relative; }
+.dd > .field { width: 100%; text-align: left; }
+.dd > .field > span { flex: 1; color: var(--ink); }
+.dd > .field[aria-expanded=true], .dd > .field:focus-visible { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+.dd > .menu { position: absolute; left: 0; right: 0; top: calc(var(--control) + 4px); z-index: 5; }
+.dd > .menu[hidden] { display: none; }
+.dd [role=option] { color: var(--ink-2); }
+.dd [role=option]:hover, .dd [role=option]:focus-visible { color: var(--ink); }
+.dd [role=option] svg { margin-left: auto; visibility: hidden; }
+.dd [aria-selected=true] { color: var(--ink); font-weight: 500; }
+.dd [aria-selected=true] svg { visibility: visible; }
+.ac { position: relative; min-height: calc(var(--control) * 6 + 24px); }
+.ac .menu { position: absolute; left: 0; right: 0; top: calc(var(--control) + 4px); }
+.ac .menu[hidden] { display: none; }
+
+.badge { height: var(--badge); min-width: 72px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r-small); font-size: var(--small); font-weight: 500; line-height: 1; background: var(--border); color: var(--ink-2); }
+.badge.info { background: var(--blue-soft); color: var(--light-blue); }
+.badge.ok { background: var(--green-soft); color: var(--green); }
+.badge.warn { background: var(--amber-soft); color: var(--amber); }
+.badge.bad { background: var(--red-soft); color: var(--red); }
+.badge.new { min-width: 0; }
+.banner { min-height: calc(var(--control) + 12px); padding: 6px var(--inset); display: flex; align-items: center; gap: 8px; border-radius: var(--r-control); background: var(--blue-soft); }
+.banner svg { color: var(--light-blue); }
+.banner.warn { background: var(--amber-soft); } .banner.warn svg { color: var(--amber); }
+.banner.bad { background: var(--red-soft); } .banner.bad svg { color: var(--red); }
+.banner span { flex: 1; }
+.toast { padding: 8px 8px 8px var(--inset); display: flex; align-items: center; gap: 8px; background: var(--raised); border: 1px solid var(--border); border-radius: var(--r-panel); box-shadow: var(--shadow); }
+.toast[hidden] { display: none; }
+.toast svg:first-child { color: var(--green); }
+.toast span { flex: 1; }
+
+.table > * { height: calc(var(--control) + 4px); width: 100%; padding: 0 8px; display: grid; grid-template-columns: 1fr 72px 80px; gap: 12px; align-items: center; text-align: left; border-bottom: 1px solid var(--border); }
+.table > :last-child { border-bottom: 0; }
+.table > div { color: var(--ink-3); font-size: var(--small); }
+.table > button { border-radius: var(--r-small); }
+.table > button:hover { background: var(--sel); }
+.table > [aria-selected=true], .table > [aria-selected=true]:hover { background: var(--sel); }
+.table .num { text-align: right; }
+
+.section { height: var(--control); display: flex; align-items: center; gap: 4px; font-weight: 600; width: 100%; }
+.section[aria-expanded=false] svg { transform: rotate(-90deg); }
+.section[aria-expanded=false] + * { display: none; }
+.crumb { display: flex; align-items: center; gap: 4px; color: var(--ink-3); }
+.crumb b { color: var(--ink); font-weight: 500; }
+.dialog { padding: var(--dialog-pad); background: var(--raised); border: 1px solid var(--border); border-radius: var(--r-dialog); box-shadow: var(--shadow); }
+.dialog h3, .empty h3 { font: 600 var(--title)/1.3 var(--font); }
+.dialog .row { justify-content: flex-end; margin-top: 8px; }
+.empty { align-items: center; text-align: center; padding: 32px var(--inset); }
+.empty > svg { width: 32px; height: 32px; stroke-width: 1.5; color: var(--ink-3); }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.card { background: var(--card-fill); border: 1px solid var(--edge); border-radius: var(--r-panel); display: flex; flex-direction: column; overflow: hidden; }
+.card > .thumb { height: 96px; }
+.card > header { padding: var(--inset) var(--inset) 0; display: flex; align-items: center; gap: 8px; }
+.card > header b { font: 600 var(--title)/1.3 var(--font); margin-right: auto; }
+.card > p { padding: 4px var(--inset) var(--inset); flex: 1; }
+.card > footer { padding: 8px var(--inset); display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--edge); }
+.card > footer > span { margin-right: auto; font-size: var(--small); white-space: nowrap; }
+.type > div, .space > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.type span:first-child { line-height: 1.25; }
+.space > div { align-items: center; justify-content: flex-start; height: 16px; }
+.space code { width: 112px; font: inherit; }
+.space i { height: 8px; border-radius: 2px; background: var(--blue); }
+
+/* Maps to j_ui::motion::value; off under reduced motion as motion::enabled is. */
+@media (prefers-reduced-motion: no-preference) {
+  .btn, .field, .seg > button, .pills > button, .tabs > button, .rail > a, .menu > button, .table > button, .opt .box, .opt .track { transition: background-color .12s, border-color .12s, color .12s, box-shadow .12s; }
+}
+
+.map { display: grid; grid-template-columns: repeat(auto-fill, minmax(500px, 1fr)); column-gap: 24px; }
+.map > div { height: var(--control); display: grid; grid-template-columns: 200px 130px 1fr; gap: 8px; align-items: center; white-space: nowrap; border-bottom: 1px solid var(--border); }
+.map code { font: inherit; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="tick" viewBox="0 0 24 24"><path d="M5.5 12.5 10 17l8.5-9.5"/></symbol>
+  <symbol id="down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+  <symbol id="alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></symbol>
+  <symbol id="ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="loader" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></symbol>
+  <symbol id="folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+  <symbol id="more" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol>
+  <symbol id="home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+</svg>
+
+<div class="app">
+<aside class="rail" data-pick><b class="brand">Studio</b><span>Components</span></aside>
+<div class="content">
+<div class="bar">
+  <h1>Component Styles</h1>
+  <div class="seg" data-pick data-set="style" aria-label="Style">
+    <button data-value="current">Current</button><button data-value="line">Line</button><button data-value="soft" aria-selected="true">Soft</button>
+  </div>
+  <div class="dd" data-value="figtree" data-set="font" style="width:160px"><button class="field" aria-haspopup="listbox" aria-expanded="false" aria-label="Font"><span></span><svg class="i"><use href="#down"/></svg></button><div class="menu" role="listbox" hidden><button role="option" data-value="figtree">Figtree<svg class="i"><use href="#check"/></svg></button><button role="option" data-value="inter">Inter<svg class="i"><use href="#check"/></svg></button></div></div>
+  <div class="seg" data-pick data-set="theme" aria-label="Theme">
+    <button data-value="dark" aria-selected="true">Dark</button><button data-value="light">Light</button>
+  </div>
+</div>
+
+<main>
+  <section class="panel wide"><header><h2>Recent Projects</h2><button class="btn primary"><svg class="i"><use href="#plus"/></svg>New Project</button></header><div class="stack">
+      <div class="cards">
+        <article class="card"><div class="thumb" style="background:#5E589F"></div><header><b>Interview Cut</b><button class="btn ghost icon" aria-label="More" title="More"><svg class="i"><use href="#more"/></svg></button></header>
+          <p class="muted">Two cameras, synced audio and a rough assembly of the first act.</p>
+          <footer><span class="muted">Edited 2 hours ago</span><button class="btn ghost">Share</button><button class="btn secondary">Open</button></footer></article>
+        <article class="card"><div class="thumb" style="background:#8E4771"></div><header><b>Harbour Shoot</b><button class="btn ghost icon" aria-label="More" title="More"><svg class="i"><use href="#more"/></svg></button></header>
+          <p class="muted">Raw footage from the morning session, sorted by location.</p>
+          <footer><span class="muted">Edited yesterday</span><button class="btn ghost">Share</button><button class="btn secondary">Open</button></footer></article>
+        <article class="card"><div class="thumb" style="background:#30715D"></div><header><b>Title Sequence</b><button class="btn ghost icon" aria-label="More" title="More"><svg class="i"><use href="#more"/></svg></button></header>
+          <p class="muted">Animated title card with three colour variations to review.</p>
+          <footer><span class="muted">Edited 12 May</span><button class="btn ghost">Share</button><button class="btn secondary">Open</button></footer></article>
+      </div>
+  </div></section>
+
+  <section class="panel"><header><h2>Typography</h2></header><div class="stack type">
+    <div><span style="font:600 var(--display) var(--font)">Display</span><span class="muted">SemiBold</span></div>
+    <div><span style="font:600 var(--headline) var(--font)">Headline</span><span class="muted">SemiBold</span></div>
+    <div><span style="font:600 var(--title) var(--font)">Title</span><span class="muted">SemiBold</span></div>
+    <div><span style="font-weight:500">Body Strong for buttons and tabs</span><span class="muted">Medium</span></div>
+    <div><span>Body for labels, values and descriptions</span><span class="muted">Regular</span></div>
+    <div><span class="muted" style="font-size:var(--small)">Small for captions and column headers</span><span class="muted">Regular</span></div>
+    <div><span style="font:500 16px var(--font)">00:01:24:08</span><span class="muted">Medium</span></div>
+  </div></section>
+
+  <section class="panel"><header><h2>Spacing</h2></header><div class="stack space">
+    <div><code>space::S4</code><i style="width:4px"></i></div>
+    <div><code>space::S8</code><i style="width:8px"></i></div>
+    <div><code>space::S12</code><i style="width:12px"></i></div>
+    <div><code>space::S16</code><i style="width:16px"></i></div>
+    <div><code>space::S24</code><i style="width:24px"></i></div>
+    <div><code>space::S32</code><i style="width:32px"></i></div>
+    <p class="muted">4 inside a control group, 8 between controls, 12 panel inset, 16 between sections, 24 and 32 for page margins.</p>
+  </div></section>
+  <section class="panel"><header><h2>Buttons</h2></header><div class="stack">
+    <div class="row">
+      <button class="btn primary">Save</button><button class="btn secondary">Cancel</button>
+      <button class="btn ghost">Reset</button><button class="btn destructive">Delete</button>
+    </div>
+    <div class="row">
+      <button class="btn secondary icon" aria-label="Add" title="Add"><svg class="i"><use href="#plus"/></svg></button>
+      <button class="btn secondary"><svg class="i"><use href="#folder"/></svg>New Folder</button>
+      <button class="btn primary"><svg class="i spin"><use href="#loader"/></svg>Saving</button>
+      <button class="btn" disabled>Export</button>
+    </div>
+  </div></section>
+
+  <section class="panel"><header><h2>Text Input</h2></header><div class="stack">
+    <label class="field"><input value="Interview Cut" aria-label="Name"></label>
+    <label class="field"><svg class="i"><use href="#search"/></svg><input placeholder="Search clips" aria-label="Search clips"></label>
+    <label class="field"><span>W</span><input value="1920" inputmode="numeric" aria-label="Width"><span>px</span></label>
+    <label class="field error"><input value="Untitled" aria-label="Project name"></label>
+    <p class="help">That name is already in use.</p>
+  </div></section>
+
+  <section class="panel"><header><h2>Autocomplete</h2><span class="badge new">New</span></header><div class="stack">
+    <div class="ac">
+      <label class="field"><svg class="i"><use href="#search"/></svg><input id="ac" value="in" placeholder="Search fonts" role="combobox" aria-controls="ac-list" aria-expanded="true" autocomplete="off"></label>
+      <div class="menu" id="ac-list" role="listbox"></div>
+    </div>
+  </div></section>
+
+  <section class="panel"><header><h2>Dropdown and Menu</h2></header><div class="stack">
+    <div class="dd" data-value="30"><button class="field" aria-haspopup="listbox" aria-expanded="false" aria-label="Frame rate"><span></span><svg class="i"><use href="#down"/></svg></button><div class="menu" role="listbox" hidden><button role="option" data-value="24">24 fps<svg class="i"><use href="#check"/></svg></button><button role="option" data-value="30">30 fps<svg class="i"><use href="#check"/></svg></button><button role="option" data-value="60">60 fps<svg class="i"><use href="#check"/></svg></button><button role="option" data-value="120">120 fps<svg class="i"><use href="#check"/></svg></button></div></div>
+    <div class="menu">
+      <button><span class="check"><svg class="i"><use href="#check"/></svg></span>Snap to Grid<kbd>Ctrl+G</kbd></button>
+      <button class="lit"><span class="check"></span>Duplicate<kbd>Ctrl+D</kbd></button>
+      <button disabled><span class="check"></span>Paste<kbd>Ctrl+V</kbd></button>
+      <hr>
+      <button><span class="check"></span>Delete<kbd>Del</kbd></button>
+    </div>
+  </div></section>
+
+  <section class="panel"><header><h2>Selection</h2></header><div class="stack">
+    <div class="row">
+      <div class="seg" data-pick><button aria-selected="true">Grid</button><button>List</button><button>Detail</button></div>
+      <div class="pills" data-pick><button aria-selected="true">All</button><button>Video</button><button>Audio</button></div>
+    </div>
+    <div class="row">
+      <button class="opt" role="checkbox" aria-checked="true"><span class="box"><svg class="i"><use href="#tick"/></svg></span>Loop Playback</button>
+      <button class="opt" role="checkbox" aria-checked="false"><span class="box"><svg class="i"><use href="#tick"/></svg></span>Mute</button>
+      <button class="opt" role="switch" aria-checked="true"><span class="track"></span>Auto Save</button>
+    </div>
+  </div></section>
+
+  <section class="panel"><header><h2>Radio Group</h2><span class="badge new">New</span></header><div class="stack">
+    <div class="row" data-pick role="radiogroup" aria-label="Quality">
+      <button class="opt" role="radio" aria-checked="false"><span class="box"></span>Draft</button>
+      <button class="opt" role="radio" aria-checked="true"><span class="box"></span>Standard</button>
+      <button class="opt" role="radio" aria-checked="false"><span class="box"></span>High</button>
+    </div>
+  </div></section>
+
+  <section class="panel"><header><h2>Slider and Progress</h2><span class="badge new">New</span></header><div class="stack">
+    <div class="between"><span>Volume</span><span class="muted" id="vol">64</span></div>
+    <input type="range" id="range" value="64" aria-label="Volume">
+    <div class="between"><span>Exporting</span><span class="muted">38%</span></div>
+    <div class="progress" role="progressbar" aria-label="Exporting" aria-valuenow="38"><div style="width:38%"></div></div>
+  </div></section>
+
+  <section class="panel"><header><h2>Navigation</h2></header><div class="stack">
+    <div class="crumb">Projects<svg class="i"><use href="#right"/></svg><b>Interview Cut</b></div>
+    <div class="tabs" data-pick><button aria-selected="true">Inspector</button><button>Effects</button><button>History</button></div>
+    <button class="section" aria-expanded="true"><svg class="i"><use href="#down"/></svg>Transform</button>
+    <p class="muted">Position, scale and rotation live here.</p>
+  </div></section>
+
+  <section class="panel"><header><h2>Badge and Banner</h2><span class="badge new">New</span></header><div class="stack">
+    <div class="row"><span class="badge">Draft</span><span class="badge info">Synced</span><span class="badge ok">Ready</span><span class="badge warn">Offline</span><span class="badge bad">Failed</span></div>
+    <div class="banner"><svg class="i"><use href="#alert"/></svg><span>An update is ready to install.</span><button class="btn ghost">Restart</button></div>
+    <div class="banner warn"><svg class="i"><use href="#alert"/></svg><span>Two clips are offline.</span><button class="btn ghost">Relink</button></div>
+    <div class="banner bad"><svg class="i"><use href="#alert"/></svg><span>The export could not be saved.</span><button class="btn ghost">Retry</button></div>
+  </div></section>
+
+  <section class="panel"><header><h2>Toast</h2><span class="badge new">New</span></header><div class="stack">
+    <div class="toast" id="toast" role="status"><svg class="i"><use href="#ok"/></svg><span>Export finished.</span><button class="btn ghost">Open</button><button class="btn ghost icon" id="toast-x" aria-label="Dismiss" title="Dismiss"><svg class="i"><use href="#x"/></svg></button></div>
+    <div class="row"><button class="btn secondary" id="toast-show">Show Toast</button></div>
+  </div></section>
+
+  <section class="panel"><header><h2>Table</h2><span class="badge new">New</span></header><div class="stack">
+    <div class="table" data-pick>
+      <div><span>Name</span><span>Status</span><span class="num">Size</span></div>
+      <button aria-selected="true"><span>Interview Cut</span><span class="badge ok">Ready</span><span class="num">1.24 GB</span></button>
+      <button><span>B-Roll Harbour</span><span class="badge info">Synced</span><span class="num">812 MB</span></button>
+      <button><span>Voiceover Take 3</span><span class="badge warn">Offline</span><span class="num">46 MB</span></button>
+      <button><span>Title Card</span><span class="badge">Draft</span><span class="num">3 MB</span></button>
+    </div>
+  </div></section>
+
+  <section class="panel"><header><h2>Dialog</h2></header><div class="stack">
+    <div class="dialog stack" role="dialog" aria-label="Delete clip">
+      <h3>Delete Clip</h3>
+      <p class="muted">The clip is removed from the timeline. The source file stays on disk.</p>
+      <div class="row"><button class="btn secondary">Cancel</button><button class="btn destructive">Delete</button></div>
+    </div>
+  </div></section>
+
+  <section class="panel"><header><h2>Empty State</h2></header><div class="stack empty">
+    <svg class="i"><use href="#folder"/></svg>
+    <h3>No Clips Yet</h3>
+    <p class="muted">Import media to start a project.</p>
+    <button class="btn secondary">Import Media</button>
+  </div></section>
+
+  <section class="panel wide"><header><h2>Token Map</h2></header><div class="stack"><div class="map" id="map"></div></div></section>
+</main>
+</div>
+</div>
+
+<script>
+const root = document.documentElement;
+
+document.addEventListener('click', e => {
+  const toggle = e.target.closest('[role=checkbox],[role=switch]');
+  if (toggle) toggle.setAttribute('aria-checked', toggle.getAttribute('aria-checked') !== 'true');
+  const section = e.target.closest('.section');
+  if (section) section.setAttribute('aria-expanded', section.getAttribute('aria-expanded') !== 'true');
+  const picked = e.target.closest('[data-pick] > button, [data-pick] > a');
+  if (!picked) return;
+  const state = picked.getAttribute('role') === 'radio' ? 'aria-checked' : 'aria-selected';
+  for (const sibling of picked.parentElement.children) sibling.setAttribute(state, sibling === picked);
+  const set = picked.parentElement.dataset.set;
+  if (set) apply(set, picked.dataset.value);
+});
+
+function apply(set, value) {
+  root.dataset[set] = value;
+  for (const b of document.querySelectorAll(`[data-set=${set}] > button`)) b.setAttribute('aria-selected', b.dataset.value === value);
+  for (const dd of document.querySelectorAll(`.dd[data-set=${set}]`)) choose(dd, value);
+  tokenMap();
+}
+
+// Dropdown: click or ArrowDown opens, arrows move, Enter picks, Escape or an outside click closes.
+function choose(dd, value) {
+  for (const option of dd.querySelectorAll('[role=option]')) {
+    const on = option.dataset.value === value;
+    option.setAttribute('aria-selected', on);
+    if (on) dd.querySelector('.field > span').textContent = option.firstChild.textContent;
+  }
+}
+function show(dd, on) {
+  dd.querySelector('.menu').hidden = !on;
+  dd.querySelector('.field').setAttribute('aria-expanded', on);
+  if (on) dd.querySelector('[aria-selected=true]').focus();
+}
+for (const dd of document.querySelectorAll('.dd')) choose(dd, dd.dataset.value);
+document.addEventListener('click', e => {
+  const dd = e.target.closest('.dd');
+  for (const other of document.querySelectorAll('.dd')) if (other !== dd) show(other, false);
+  if (!dd) return;
+  const option = e.target.closest('[role=option]');
+  if (!option) return show(dd, dd.querySelector('.menu').hidden);
+  choose(dd, option.dataset.value);
+  show(dd, false);
+  dd.querySelector('.field').focus();
+  if (dd.dataset.set) apply(dd.dataset.set, option.dataset.value);
+});
+document.addEventListener('keydown', e => {
+  const dd = e.target.closest('.dd');
+  if (!dd) return;
+  const menu = dd.querySelector('.menu'), option = e.target.closest('[role=option]');
+  if (e.key === 'Escape' && !menu.hidden) { show(dd, false); dd.querySelector('.field').focus(); }
+  const step = { ArrowDown: 'nextElementSibling', ArrowUp: 'previousElementSibling' }[e.key];
+  if (!step) return;
+  e.preventDefault();
+  if (menu.hidden) return show(dd, true);
+  if (option && option[step]) option[step].focus();
+});
+
+const range = document.getElementById('range');
+function slide() {
+  range.style.setProperty('--at', range.value + '%');
+  document.getElementById('vol').textContent = range.value;
+}
+range.addEventListener('input', slide);
+slide();
+
+const toast = document.getElementById('toast');
+document.getElementById('toast-x').onclick = () => toast.hidden = true;
+document.getElementById('toast-show').onclick = () => toast.hidden = false;
+
+// Autocomplete: substring match, arrow keys move, Enter picks, Escape closes.
+const fonts = ['Inter', 'Inter Display', 'Onest', 'Geist', 'IBM Plex Sans', 'JetBrains Mono', 'Noto Sans', 'Source Serif'];
+const input = document.getElementById('ac'), list = document.getElementById('ac-list');
+let active = 0, matches = [];
+function suggest() {
+  const q = input.value.trim().toLowerCase();
+  matches = fonts.filter(f => f.toLowerCase().includes(q)).slice(0, 5);
+  active = Math.min(active, Math.max(matches.length - 1, 0));
+  list.replaceChildren(...matches.map((font, i) => {
+    const row = document.createElement('button');
+    const at = font.toLowerCase().indexOf(q);
+    const label = document.createElement('span');
+    label.append(font.slice(0, at), Object.assign(document.createElement('span'), { className: 'hit', textContent: font.slice(at, at + q.length) }), font.slice(at + q.length));
+    row.append(label);
+    row.role = 'option';
+    row.className = i === active ? 'lit' : '';
+    row.onmousedown = e => { e.preventDefault(); pick(font); };
+    return row;
+  }));
+  if (!matches.length) list.append(Object.assign(document.createElement('div'), { className: 'muted', textContent: 'No matching fonts' }));
+  open(true);
+}
+function open(on) { list.hidden = !on; input.setAttribute('aria-expanded', on); }
+function pick(font) { input.value = font; open(false); }
+input.addEventListener('input', () => { active = 0; suggest(); });
+input.addEventListener('focus', suggest);
+input.addEventListener('blur', () => open(false));
+input.addEventListener('keydown', e => {
+  if (e.key === 'Escape') return open(false);
+  if (e.key === 'Enter' && !list.hidden && matches[active]) return pick(matches[active]);
+  const step = { ArrowDown: 1, ArrowUp: -1 }[e.key];
+  if (!step || !matches.length) return;
+  e.preventDefault();
+  active = (active + step + matches.length) % matches.length;
+  suggest();
+});
+suggest();
+
+const tokens = [
+  ['--r-small', 'radius::SMALL'], ['--r-control', 'radius::CONTROL'], ['--r-panel', 'radius::PANEL'], ['--r-dialog', 'radius::DIALOG'],
+  ['--control', 'size::CONTROL'], ['--header', 'size::HEADER'], ['--bar', 'size::APP_BAR'], ['--icon', 'size::ICON'], ['--check', 'SELECTION_DIAMETER'], ['--inset', 'space::INSET'],
+  ['--body', 'font::BODY'], ['--small', 'font::SMALL'], ['--title', 'font::TITLE'], ['--headline', 'font::HEADLINE'], ['--display', 'font::DISPLAY'],
+  ['--panel-fill', 'Panel fill'], ['--panel-border', 'Panel stroke'], ['--field-fill', 'TextInput fill'], ['--field-border', 'TextInput stroke'],
+  ['--btn-fill', 'Button::secondary fill'], ['--btn-border', 'Button::secondary stroke'], ['--seg-track', 'Segmented track'], ['--seg-on', 'Segmented selected fill'], ['--card-fill', 'Card fill'], ['--sel', 'Selected row fill'], ['--edge', 'Region hairline'],
+  ['--shadow', 'Visuals::popup_shadow'],
+];
+function tokenMap() {
+  const style = getComputedStyle(root);
+  document.getElementById('map').replaceChildren(...tokens.map(([name, rust]) => {
+    const row = document.createElement('div');
+    for (const text of [rust, name, style.getPropertyValue(name).trim()]) row.append(Object.assign(document.createElement('code'), { textContent: text }));
+    row.lastChild.className = 'muted';
+    return row;
+  }));
+}
+
+const rail = document.querySelector('.rail');
+for (const title of document.querySelectorAll('main h2')) {
+  const section = title.closest('section');
+  section.id = title.textContent.toLowerCase().replace(/\W+/g, '-');
+  rail.append(Object.assign(document.createElement('a'), { href: '#' + section.id, textContent: title.textContent }));
+}
+rail.querySelector('a').setAttribute('aria-selected', true);
+
+const query = new URLSearchParams(location.search);
+apply('font', query.get('font') || 'figtree');
+apply('style', query.get('style') || 'soft');
+apply('theme', query.get('theme') || 'dark');
+</script>
+</body>
+</html>
