@@ -64,31 +64,44 @@ pub mod space {
     pub const S16: f32 = 16.0;
     pub const S24: f32 = 24.0;
     pub const S32: f32 = 32.0;
-    /// Left and right padding inside a panel and its header.
-    pub const INSET: f32 = S12;
+    /// Padding inside a panel and its header.
+    pub const INSET: f32 = S16;
     /// Between panels, and between panels and the window edge.
-    pub const GUTTER: f32 = S4;
+    pub const GUTTER: f32 = S16;
+    /// Between controls in a row or a stack.
+    pub const GAP: f32 = S12;
+    /// Left and right padding inside a button.
+    pub const BUTTON_PAD: f32 = S16;
+    /// Left and right padding inside a field or a menu row.
+    pub const FIELD_PAD: f32 = S12;
+    /// Padding inside a dialog.
+    pub const DIALOG_PAD: f32 = S24;
 }
 
 /// Corner radii. Every corner in the suite comes from this scale.
 pub mod radius {
-    pub const SMALL: u8 = 4;
-    pub const CONTROL: u8 = 6;
-    pub const PANEL: u8 = 8;
-    pub const DIALOG: u8 = 12;
+    pub const SMALL: u8 = 8;
+    pub const CONTROL: u8 = 10;
+    pub const PANEL: u8 = 16;
+    pub const DIALOG: u8 = 20;
     pub const SCALE: [u8; 4] = [SMALL, CONTROL, PANEL, DIALOG];
 }
 
 /// Fixed component sizes.
 pub mod size {
-    pub const APP_BAR: f32 = 40.0;
-    pub const HEADER: f32 = 32.0;
+    pub const APP_BAR: f32 = 56.0;
+    pub const HEADER: f32 = 48.0;
     pub const RULER: f32 = 24.0;
-    pub const CONTROL: f32 = 24.0;
+    pub const CONTROL: f32 = 36.0;
     pub const TAB_MAX: f32 = 160.0;
     pub const TAB_MIN: f32 = 64.0;
-    pub const SMALL_CONTROL: f32 = 20.0;
-    pub const ICON: f32 = 16.0;
+    pub const SMALL_CONTROL: f32 = 28.0;
+    pub const ICON: f32 = 18.0;
+    pub const BADGE: f32 = 24.0;
+    /// Thickness of a slider or progress track.
+    pub const SLIDER_TRACK: f32 = 6.0;
+    /// Diameter of a slider thumb.
+    pub const THUMB: f32 = 16.0;
     pub const TRACK_HEADER: f32 = 160.0;
     pub const TRACK: f32 = 40.0;
     pub const INSPECTOR_LABEL: f32 = 72.0;
@@ -97,11 +110,11 @@ pub mod size {
 
 /// Type scale: font sizes in points.
 pub mod font {
-    pub const DISPLAY: f32 = 22.0;
-    pub const HEADLINE: f32 = 16.0;
-    pub const TITLE: f32 = 14.0;
-    pub const BODY: f32 = 12.0;
-    pub const SMALL: f32 = 10.0;
+    pub const DISPLAY: f32 = 28.0;
+    pub const HEADLINE: f32 = 20.0;
+    pub const TITLE: f32 = 16.0;
+    pub const BODY: f32 = 14.0;
+    pub const SMALL: f32 = 12.0;
     pub const TIMECODE: f32 = 16.0;
 }
 

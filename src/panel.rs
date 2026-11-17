@@ -1,16 +1,12 @@
-//! The panel frame every dock panel uses: an 8px-radius Panel surface with a 1px
-//! border (Blue when focused) and one 32px header holding a title or tabs.
+//! The panel frame every dock panel uses: a borderless 16px-radius Panel surface (a 1px
+//! Blue border when focused) and one 48px header holding a title or tabs.
 
 use egui::emath::GuiRounding as _;
-use egui::{
-    CornerRadius, Rect, Sense, StrokeKind, Ui, UiBuilder, Vec2, WidgetInfo, WidgetType, pos2, vec2,
-};
+use egui::{CornerRadius, Rect, Sense, StrokeKind, Ui, UiBuilder, Vec2, pos2, vec2};
 
-use crate::i18n::CATALOG;
-use crate::theme::{self, hairline, icon};
+use crate::theme::{self, hairline};
 use crate::tokens::{color, radius, size, space};
-use crate::tr;
-use crate::widgets::{Button, fit_text, focus_ring, hover_full, paint_fit};
+use crate::widgets::{Button, fit_text, paint_fit, tab_strip};
 
 /// What a panel's header shows.
 pub enum Header<'a> {
@@ -18,9 +14,9 @@ pub enum Header<'a> {
     None,
     /// A row reserved for panel tools, below the dock's title strip.
     Toolbar,
-    /// A single view: its title sits 12px in.
+    /// A single view: its title sits 16px in.
     Title(&'a str),
-    /// Several views as equal-width tabs; clicking one sets `active`.
+    /// Several views as underlined tabs; clicking one sets `active`.
     Tabs {
         labels: &'a [&'a str],
         active: &'a mut usize,
@@ -86,13 +82,13 @@ impl<'a> Panel<'a> {
         self
     }
 
-    /// Tabs share the whole header instead of stopping at 160px each.
+    /// Tab labels run to their full width instead of eliding at 160px each.
     pub fn wide(mut self, wide: bool) -> Self {
         self.wide = wide;
         self
     }
 
-    /// Keyboard focus: swaps the border to Blue.
+    /// Keyboard focus: draws a Blue border.
     pub fn focused(mut self, focused: bool) -> Self {
         self.focused = focused;
         self
@@ -127,17 +123,9 @@ impl<'a> Panel<'a> {
             size::HEADER
         };
         let header = Rect::from_min_size(rect.min, vec2(rect.width(), height));
-        let line = 1.0 / ppp;
-        if height > 0.0 {
-            painter.rect_filled(
-                Rect::from_x_y_ranges(rect.x_range(), header.bottom() - line..=header.bottom()),
-                0.0,
-                color::border(),
-            );
-        }
 
         let mut action = None;
-        let mut right = header.right() - space::S8;
+        let mut right = header.right() - space::INSET;
         for (i, (glyph, name)) in self.actions.iter().enumerate().rev() {
             let r = Rect::from_min_size(
                 pos2(
@@ -151,153 +139,44 @@ impl<'a> Panel<'a> {
             if b.on_hover_text(*name).clicked() {
                 action = Some(i);
             }
-            right = r.left() - space::S4;
+            right = r.left() - space::S8;
         }
 
         match self.header {
             Header::None | Header::Toolbar => {}
             Header::Title(title) => {
                 let left = header.left() + space::INSET;
-                let galley = fit_text(ui, title, theme::body_strong(), color::ink(), right - left);
+                let galley = fit_text(ui, title, theme::panel_title(), color::ink(), right - left);
                 let pos = pos2(left, header.center().y - galley.size().y / 2.0);
                 paint_fit(ui, pos.round_to_pixels(ppp), galley, color::ink());
             }
             Header::Tabs { labels, active } => {
-                let right = if self.actions.is_empty() {
-                    header.right() - space::S4
+                let max = if self.wide {
+                    f32::INFINITY
                 } else {
-                    right + space::S4
+                    size::TAB_MAX
                 };
-                tabs(
-                    ui,
-                    header.left() + space::S4..=right,
-                    header,
-                    labels,
-                    active,
-                    if self.wide {
-                        f32::INFINITY
-                    } else {
-                        size::TAB_MAX
-                    },
-                );
+                let ends = (header.left() + space::INSET, right);
+                tab_strip(ui, ends, header, labels, active, max);
             }
         }
 
         let body = Rect::from_x_y_ranges(
             rect.left() + space::INSET..=rect.right() - space::INSET,
-            header.bottom() + space::S8..=rect.bottom() - space::S8,
+            header.bottom() + space::INSET..=rect.bottom() - space::INSET,
         );
         let mut child = ui.new_child(UiBuilder::new().max_rect(body));
         child.set_clip_rect(body.intersect(ui.clip_rect()));
         let inner = content(&mut child);
 
-        let border = if self.focused {
-            color::blue()
-        } else {
-            color::border()
-        };
-        if !self.embedded {
-            painter.rect_stroke(rect, corner, hairline(ui.ctx(), border), StrokeKind::Inside);
+        if self.focused && !self.embedded {
+            let border = hairline(ui.ctx(), color::blue());
+            painter.rect_stroke(rect, corner, border, StrokeKind::Inside);
         }
         PanelResponse {
             inner,
             action,
             response,
         }
-    }
-}
-
-/// Lays out tab pills between `x` bounds: equal widths up to `max`, 4px apart.
-/// Tabs that would shrink below 64px move into a chevron menu at the end.
-fn tabs(
-    ui: &mut Ui,
-    x: std::ops::RangeInclusive<f32>,
-    header: Rect,
-    labels: &[&str],
-    active: &mut usize,
-    max: f32,
-) {
-    let (left, right) = (*x.start(), *x.end());
-    let avail = (right - left).max(0.0);
-    let gap = space::S4;
-    let fit = |n: usize, extra: f32| (avail - extra - gap * (n as f32 - 1.0)) / n as f32;
-    let mut shown = labels.len();
-    let mut overflow = false;
-    while shown > 1
-        && fit(
-            shown,
-            if shown < labels.len() {
-                size::CONTROL + gap
-            } else {
-                0.0
-            },
-        ) < size::TAB_MIN
-    {
-        shown -= 1;
-        overflow = true;
-    }
-    let extra = if overflow { size::CONTROL + gap } else { 0.0 };
-    let width = fit(shown, extra).min(max).floor();
-    let ppp = ui.pixels_per_point();
-    let mut x = left;
-    for (i, label) in labels.iter().take(shown).enumerate() {
-        let pill = Rect::from_min_size(
-            pos2(x, header.center().y - size::CONTROL / 2.0),
-            vec2(width, size::CONTROL),
-        )
-        .round_to_pixels(ppp);
-        x = pill.right() + gap;
-        let r = ui.interact(pill, ui.id().with(("tab", i)), Sense::click());
-        let on = i == *active;
-        r.widget_info(|| WidgetInfo::selected(WidgetType::SelectableLabel, true, on, *label));
-        if r.clicked() {
-            *active = i;
-        }
-        let fill = if on {
-            color::raised()
-        } else {
-            egui::Color32::TRANSPARENT
-        };
-        ui.painter()
-            .rect_filled(pill, CornerRadius::same(radius::CONTROL), fill);
-        let ink = if on {
-            color::ink()
-        } else if r.hovered() {
-            color::ink_2()
-        } else {
-            color::ink_3()
-        };
-        let galley = fit_text(
-            ui,
-            label,
-            theme::body_strong(),
-            ink,
-            width - 2.0 * space::S8,
-        );
-        let r = hover_full(r, &galley);
-        let pos = pos2(
-            pill.center().x - galley.size().x / 2.0,
-            header.center().y - galley.size().y / 2.0,
-        );
-        ui.painter().galley(pos.round_to_pixels(ppp), galley, ink);
-        if r.has_focus() {
-            ui.painter().add(focus_ring(pill, radius::CONTROL));
-        }
-    }
-    if overflow {
-        let r = ui.put(
-            Rect::from_min_size(
-                pos2(x, header.center().y - size::CONTROL / 2.0),
-                Vec2::splat(size::CONTROL),
-            ),
-            Button::icon(icon::CHEVRON_DOWN, tr!(CATALOG, "panel.more_tabs")),
-        );
-        egui::Popup::menu(&r).show(|ui| {
-            for (i, label) in labels.iter().enumerate().skip(shown) {
-                if ui.selectable_label(i == *active, *label).clicked() {
-                    *active = i;
-                }
-            }
-        });
     }
 }

@@ -6,7 +6,8 @@ use crate::theme;
 use crate::tokens::{color, space};
 use crate::widgets::Button;
 
-/// An unframed outline icon, a 14px heading, 12px help, and an optional existing action.
+/// An unframed 32px outline icon, a Title heading, Body help, and an optional existing
+/// action, 12px apart.
 /// Use only for empty content or no selection; loading and errors keep their own treatment.
 pub struct EmptyState<'a> {
     icon: &'a str,
@@ -80,13 +81,13 @@ impl<'a> EmptyState<'a> {
                 .size()
                 .x
                 .ceil()
-                + 2.0 * space::S12
+                + 2.0 * space::BUTTON_PAD
         });
         let group_width = width;
         let height = 32.0
             + space::S12
             + title.size().y
-            + space::S4
+            + space::S12
             + help.size().y
             + if self.action.is_some() {
                 space::S12 + crate::tokens::size::CONTROL
@@ -121,7 +122,7 @@ impl<'a> EmptyState<'a> {
                 let center = content_rect.center().x;
                 let icon = ui.painter().layout_no_wrap(
                     self.icon.into(),
-                    egui::FontId::new(28.0, theme::icon_font().family),
+                    egui::FontId::new(32.0, theme::icon_font().family),
                     muted,
                 );
                 ui.painter().galley(
@@ -135,7 +136,7 @@ impl<'a> EmptyState<'a> {
                         pos2(center - width / 2.0, y),
                         vec2(width, galley.size().y),
                     );
-                    y += galley.size().y + space::S4;
+                    y += galley.size().y + space::S12;
                     // Labels expose real, wrapped text to accessibility, unlike painter-only copy.
                     ui.put(
                         rect,
@@ -144,10 +145,7 @@ impl<'a> EmptyState<'a> {
                 }
                 let action = self.action.map(|(label, primary)| {
                     let rect = Rect::from_min_size(
-                        pos2(
-                            center - action_width.min(width) / 2.0,
-                            y - space::S4 + space::S12,
-                        ),
+                        pos2(center - action_width.min(width) / 2.0, y),
                         vec2(action_width.min(width), crate::tokens::size::CONTROL),
                     );
                     let button = if primary {

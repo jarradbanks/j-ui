@@ -5,7 +5,7 @@ use crate::{
     i18n::CATALOG,
     tokens::space,
     tr,
-    widgets::{Button, Checkbox},
+    widgets::{Button, Checkbox, Progress},
 };
 use egui::{Context, Id, Ui};
 use j_update::{
@@ -97,7 +97,7 @@ impl Prompt<'_> {
                         tr!(CATALOG, "updates.downloading")
                     });
                     let progress = (*received as f32 / u.asset.size.max(1) as f32).clamp(0.0, 1.0);
-                    ui.add(egui::ProgressBar::new(progress).show_percentage());
+                    ui.add(Progress::new(progress, tr!(CATALOG, "updates.downloading")));
                     ui.label(tr!(
                         CATALOG,
                         "updates.progress",

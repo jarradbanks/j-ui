@@ -2,6 +2,7 @@
 
 use std::sync::{Arc, Mutex};
 
+use egui::epaint::text::VariationCoords;
 use egui::{
     Color32, Context, CornerRadius, FontData, FontDefinitions, FontFamily, FontId, Shadow, Stroke,
     Style, TextStyle, Visuals,
@@ -57,12 +58,12 @@ pub mod icon {
     pub const COMPARE: &str = "\u{E3BA}";
 }
 
-/// Inter Medium (500), for Body Strong, buttons, tabs and the timecode.
+/// Figtree Medium (500), for Body Strong, buttons, tabs and the timecode.
 pub fn medium() -> FontFamily {
     FontFamily::Name("medium".into())
 }
 
-/// Inter SemiBold (600), for titles and headlines.
+/// Figtree SemiBold (600), for titles and headlines.
 pub fn semibold() -> FontFamily {
     FontFamily::Name("semibold".into())
 }
@@ -80,8 +81,18 @@ pub fn body_strong() -> FontId {
     FontId::new(font::BODY, medium())
 }
 
+/// SemiBold Body, for panel and section titles.
+pub fn panel_title() -> FontId {
+    FontId::new(font::BODY, semibold())
+}
+
 pub fn small() -> FontId {
     FontId::new(font::SMALL, FontFamily::Proportional)
+}
+
+/// Medium Small, for badges.
+pub fn small_strong() -> FontId {
+    FontId::new(font::SMALL, medium())
 }
 
 pub fn title() -> FontId {
@@ -100,12 +111,16 @@ pub fn timecode() -> FontId {
     FontId::new(font::TIMECODE, medium())
 }
 
-/// A 16px icon glyph.
+/// An 18px icon glyph.
 pub fn icon_font() -> FontId {
     FontId::new(size::ICON, FontFamily::Name("icons".into()))
 }
 
-/// Bundled Inter faces, also used by consumers' text renderers.
+/// Figtree's variable face (weights 300 to 900) with tabular figures frozen in.
+pub static FIGTREE: &[u8] = include_bytes!("../assets/Figtree.ttf");
+
+/// Bundled Inter faces: the fallback for scripts Figtree lacks, such as Cyrillic, and also
+/// used by consumers' text renderers.
 pub static INTER_REGULAR: &[u8] = include_bytes!("../assets/Inter-Regular.ttf");
 pub static INTER_MEDIUM: &[u8] = include_bytes!("../assets/Inter-Medium.ttf");
 pub static INTER_SEMIBOLD: &[u8] = include_bytes!("../assets/Inter-SemiBold.ttf");
@@ -128,9 +143,9 @@ pub fn cjk_face(lang: &str) -> String {
     format!("noto-cjk-{lang}")
 }
 
-/// Inter (tabular figures frozen in) for every family, then `lang`'s CJK face if it has one,
-/// the CJK language names (the Settings picker shows them in every language) and the icon
-/// subset as fallbacks.
+/// Figtree for every family, then Inter (both with tabular figures frozen in), `lang`'s CJK
+/// face if it has one, the CJK language names (the Settings picker shows them in every
+/// language) and the icon subset as fallbacks.
 pub fn fonts(lang: &str) -> FontDefinitions {
     let mut fonts = FontDefinitions::empty();
     let cjk = CJK_FACES.iter().find(|(l, _)| *l == lang);
@@ -149,6 +164,16 @@ pub fn fonts(lang: &str) -> FontDefinitions {
             .font_data
             .insert(name.into(), Arc::new(FontData::from_static(bytes)));
     }
+    let weights = [
+        ("figtree", 400.0),
+        ("figtree-medium", 500.0),
+        ("figtree-semibold", 600.0),
+    ];
+    for (name, weight) in weights {
+        let mut face = FontData::from_static(FIGTREE);
+        face.tweak.coords = VariationCoords::new([(b"wght", weight)]);
+        fonts.font_data.insert(name.into(), Arc::new(face));
+    }
     for (l, bytes) in CJK_FACES {
         fonts
             .font_data
@@ -160,18 +185,24 @@ pub fn fonts(lang: &str) -> FontDefinitions {
         .chain(["cjk-names".into(), "lucide".into()])
         .collect();
     let families = [
-        (FontFamily::Proportional, "inter"),
-        (FontFamily::Monospace, "inter"),
-        (medium(), "inter-medium"),
-        (semibold(), "inter-semibold"),
-        (FontFamily::Name("icons".into()), "lucide"),
+        (FontFamily::Proportional, ["figtree", "inter"]),
+        (FontFamily::Monospace, ["figtree", "inter"]),
+        (medium(), ["figtree-medium", "inter-medium"]),
+        (semibold(), ["figtree-semibold", "inter-semibold"]),
     ];
-    for (family, face) in families {
-        let chain = std::iter::once(face.to_owned()).chain(fallbacks.iter().cloned());
+    for (family, faces) in families {
+        let chain = faces.map(String::from).into_iter().chain(fallbacks.clone());
         fonts.families.insert(family, chain.collect());
     }
+    fonts.families.insert(
+        FontFamily::Name("icons".into()),
+        std::iter::once("lucide".to_owned())
+            .chain(fallbacks.clone())
+            .collect(),
+    );
     // Locale-specific chrome keeps its existing chain; only content gets every face.
-    let content = std::iter::once("inter".into())
+    let content = ["figtree".to_owned(), "inter".to_owned()]
+        .into_iter()
         .chain(cjk.map(|(lang, _)| cjk_face(lang)))
         .chain(
             CJK_FACES
@@ -186,7 +217,7 @@ pub fn fonts(lang: &str) -> FontDefinitions {
     fonts
 }
 
-/// The egui style: dark visuals, compact spacing and the suite's text styles.
+/// The egui style: dark visuals, the suite's spacing and its text styles.
 pub fn style() -> Style {
     let mut style = Style {
         visuals: visuals(),
@@ -204,13 +235,13 @@ pub fn style() -> Style {
     ]
     .into();
     let s = &mut style.spacing;
-    s.item_spacing = egui::vec2(space::S8, space::S4);
-    s.button_padding = egui::vec2(space::S12, 0.0);
+    s.item_spacing = egui::Vec2::splat(space::GAP);
+    s.button_padding = egui::vec2(space::BUTTON_PAD, 0.0);
     s.interact_size = egui::vec2(size::CONTROL, size::CONTROL);
-    s.icon_width = 14.0;
-    s.icon_width_inner = 8.0;
+    s.icon_width = 18.0;
+    s.icon_width_inner = 10.0;
     s.icon_spacing = space::S8;
-    s.window_margin = egui::Margin::same(space::S12 as i8);
+    s.window_margin = egui::Margin::same(space::DIALOG_PAD as i8);
     s.menu_margin = egui::Margin::same(space::S4 as i8);
     s.combo_height = 240.0;
     s.scroll.bar_width = 4.0;
@@ -236,17 +267,20 @@ pub fn visuals_with(p: &Palette) -> Visuals {
     w.noninteractive.weak_bg_fill = color.panel;
     w.noninteractive.bg_stroke = Stroke::new(1.0, color.border);
     w.noninteractive.fg_stroke = Stroke::new(1.0, color.ink);
-    w.inactive.bg_fill = color.field;
-    w.inactive.weak_bg_fill = color.raised;
-    w.inactive.bg_stroke = Stroke::new(1.0, color.border);
+    // Controls are borderless: the fill's tone step carries the shape. The stroke stays
+    // transparent, not absent, because `sync_hairlines` rewrites every width.
+    let borderless = Stroke::new(1.0, Color32::TRANSPARENT);
+    w.inactive.bg_fill = color.ground;
+    w.inactive.weak_bg_fill = color.border;
+    w.inactive.bg_stroke = borderless;
     w.inactive.fg_stroke = Stroke::new(1.0, color.ink);
-    w.hovered.bg_fill = color.field;
+    w.hovered.bg_fill = color.ground;
     w.hovered.weak_bg_fill = color.raised;
-    w.hovered.bg_stroke = Stroke::new(1.0, color.border_strong);
+    w.hovered.bg_stroke = borderless;
     w.hovered.fg_stroke = Stroke::new(1.0, color.ink);
-    w.active.bg_fill = color.field;
-    w.active.weak_bg_fill = color.border;
-    w.active.bg_stroke = Stroke::new(1.0, color.border_strong);
+    w.active.bg_fill = color.ground;
+    w.active.weak_bg_fill = color.raised;
+    w.active.bg_stroke = borderless;
     w.active.fg_stroke = Stroke::new(1.0, color.ink);
     w.open = w.active;
     for wv in [
@@ -263,8 +297,8 @@ pub fn visuals_with(p: &Palette) -> Visuals {
     v.selection.stroke = Stroke::new(1.0, color.light_blue);
     v.hyperlink_color = color.light_blue;
     v.faint_bg_color = color.raised;
-    v.extreme_bg_color = color.field;
-    v.code_bg_color = color.field;
+    v.extreme_bg_color = color.ground;
+    v.code_bg_color = color.ground;
     v.warn_fg_color = color.amber;
     v.error_fg_color = color.red;
     v.panel_fill = color.panel;

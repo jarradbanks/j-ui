@@ -179,10 +179,10 @@ fn readable_theme_inks_and_type_sizes_keep_the_viewer_neutral() {
             h.run();
             let palette = if viewer { themes::DARK } else { palette };
             for (label, size, ink) in [
-                ("Nothing to Preview", 14.0, palette.ink),
+                ("Nothing to Preview", font::TITLE, palette.ink),
                 (
                     "Add a video clip to the timeline to see it here.",
-                    12.0,
+                    font::BODY,
                     palette.ink_3,
                 ),
             ] {

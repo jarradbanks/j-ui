@@ -5,7 +5,7 @@ use egui_kittest::{Harness, kittest::Queryable};
 use j_ui::{test_support, theme, tokens::color, widgets::TextInput};
 
 const SCALES: [f32; 3] = [1.0, 1.25, 1.5];
-const HEIGHTS: [f32; 4] = [24.0, 32.0, 36.0, 48.0];
+const HEIGHTS: [f32; 4] = [36.0, 40.0, 48.0, 56.0];
 
 fn install_font(ui: &egui::Ui, fresh: &mut bool, offset: f32) -> bool {
     if !std::mem::take(fresh) {
@@ -14,7 +14,7 @@ fn install_font(ui: &egui::Ui, fresh: &mut bool, offset: f32) -> bool {
     theme::install(ui.ctx());
     let mut fonts = theme::fonts("en");
     // Emulate Onest's ink above its line-box centre without another bundled font.
-    std::sync::Arc::make_mut(fonts.font_data.get_mut("inter").unwrap())
+    std::sync::Arc::make_mut(fonts.font_data.get_mut("figtree").unwrap())
         .tweak
         .y_offset = offset;
     ui.ctx().set_fonts(fonts);
@@ -131,7 +131,7 @@ fn singleline_centres_font_ink_at_every_height_and_scale() {
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
     println!(
-        "PASSED font ink: placeholder/value/plain/search, heights 24/32/36/48, 1280x720/1920x1080, DPI 1/1.25/1.5; shifted fonts <=0.5px, Inter <=1px"
+        "PASSED font ink: placeholder/value/plain/search, heights 36/40/48/56, 1280x720/1920x1080, DPI 1/1.25/1.5; shifted fonts <=0.5px, Inter <=1px"
     );
 }
 
@@ -278,6 +278,6 @@ fn caret_selection_and_ime_follow_the_editor_origin() {
         }
     }
     println!(
-        "PASSED caret/selection/IME: empty/typed/selected/composing, plain/search, heights 24/32/36/48, DPI 1/1.25/1.5; one stable editor origin"
+        "PASSED caret/selection/IME: empty/typed/selected/composing, plain/search, heights 36/40/48/56, DPI 1/1.25/1.5; one stable editor origin"
     );
 }

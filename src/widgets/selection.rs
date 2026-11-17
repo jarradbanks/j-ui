@@ -2,9 +2,12 @@
 
 use super::*;
 
+/// The corner that makes a [`SELECTION_DIAMETER`] box a circle.
+const ROUND: u8 = (SELECTION_DIAMETER / 2.0) as u8;
+
 /// Logical-point geometry shared by selection controls and composite tiles.
 pub const SELECTION_TILE: f32 = 20.0;
-pub const SELECTION_DIAMETER: f32 = 14.0;
+pub const SELECTION_DIAMETER: f32 = 18.0;
 
 /// Paints a circular selection indicator without adding interaction or a focus ring.
 pub fn paint_selection(ui: &Ui, tile: Rect, selected: bool, mixed: bool) {
@@ -136,13 +139,14 @@ impl Widget for SelectionCheckbox<'_> {
             );
         }
         if l.focus {
-            ui.painter().add(focus_ring(rect, radius::SMALL));
+            let circle = Rect::from_center_size(rect.center(), Vec2::splat(SELECTION_DIAMETER));
+            paint_focus(ui, circle, ROUND);
         }
         response.on_hover_text(self.label)
     }
 }
 
-/// A 40 × 22 switch with an 18-point knob and an accessible switch role.
+/// A 32 × 18 switch with a 14-point knob and an accessible switch role.
 #[must_use = "add it with `ui.add(..)`"]
 pub struct Toggle<'a> {
     value: &'a mut bool,
@@ -166,7 +170,8 @@ impl<'a> Toggle<'a> {
 
 impl Widget for Toggle<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let (rect, mut response) = allocate(ui, vec2(40.0, 22.0), self.state, Sense::click());
+        let size = vec2(2.0 * SELECTION_DIAMETER - 4.0, SELECTION_DIAMETER);
+        let (rect, mut response) = allocate(ui, size, self.state, Sense::click());
         if response.clicked() {
             *self.value = !*self.value;
             response.mark_changed();
@@ -187,22 +192,113 @@ impl Widget for Toggle<'_> {
         } else {
             color::border_strong()
         };
-        ui.painter().rect_filled(rect, 11.0, fill);
+        let half = rect.height() / 2.0;
+        ui.painter().rect_filled(rect, half, fill);
         let x = if *self.value {
-            rect.right() - 11.0
+            rect.right() - half
         } else {
-            rect.left() + 11.0
+            rect.left() + half
         };
         ui.painter()
-            .circle_filled(pos2(x, rect.center().y), 9.0, Color32::WHITE);
+            .circle_filled(pos2(x, rect.center().y), half - 2.0, Color32::WHITE);
         if look(&response, self.state).focus {
-            ui.painter().add(focus_ring(rect, 11));
+            paint_focus(ui, rect, ROUND);
         }
         response
     }
 }
 
-/// A return button followed by a separator and an elided detail-page title.
+/// A row of mutually exclusive options, each an 18px radio button with a label.
+#[must_use = "add it with `ui.add(..)`"]
+pub struct RadioGroup<'a> {
+    selected: &'a mut usize,
+    options: &'a [&'a str],
+    state: State,
+}
+
+impl<'a> RadioGroup<'a> {
+    pub fn new(selected: &'a mut usize, options: &'a [&'a str]) -> Self {
+        Self {
+            selected,
+            options,
+            state: State::Live,
+        }
+    }
+
+    /// Pins the state of the first unselected option.
+    pub fn state(mut self, state: State) -> Self {
+        self.state = state;
+        self
+    }
+}
+
+impl Widget for RadioGroup<'_> {
+    fn ui(self, ui: &mut Ui) -> Response {
+        let first_unselected = (0..self.options.len()).find(|i| i != self.selected);
+        let row = ui.horizontal(|ui| {
+            ui.spacing_mut().item_spacing.x = space::GAP;
+            let mut changed = false;
+            for (i, option) in self.options.iter().enumerate() {
+                let pinned = match Some(i) == first_unselected || self.state == State::Disabled {
+                    true => self.state,
+                    false => State::Live,
+                };
+                let width = SELECTION_DIAMETER + space::S8 + text_width(ui, option, &theme::body());
+                let size = vec2(width.ceil(), size::CONTROL);
+                let (rect, response) = allocate(ui, size, pinned, Sense::click());
+                let on = i == *self.selected;
+                response.widget_info(|| {
+                    WidgetInfo::selected(WidgetType::RadioButton, response.enabled(), on, *option)
+                });
+                if response.clicked() && !on {
+                    *self.selected = i;
+                    changed = true;
+                }
+                let l = look(&response, pinned);
+                let center = pos2(rect.left() + SELECTION_DIAMETER / 2.0, rect.center().y);
+                let r = SELECTION_DIAMETER / 2.0;
+                let (edge, ink) = match () {
+                    _ if l.disabled => (color::border(), color::ink_4()),
+                    _ if l.focus => (color::light_blue(), color::ink()),
+                    _ => (color::border_strong(), color::ink()),
+                };
+                if on {
+                    let ring = if l.disabled { edge } else { color::blue() };
+                    ui.painter().circle_filled(center, r, ring);
+                    // The ring is 1/3.5 of the diameter wide; the rest is the white dot.
+                    let dot = r - SELECTION_DIAMETER / 3.5;
+                    ui.painter().circle_filled(center, dot, color::WHITE);
+                } else {
+                    let stroke = hairline(ui.ctx(), edge);
+                    ui.painter()
+                        .circle_stroke(center, r - stroke.width / 2.0, stroke);
+                }
+                ui.painter().text(
+                    pos2(
+                        rect.left() + SELECTION_DIAMETER + space::S8,
+                        rect.center().y,
+                    ),
+                    Align2::LEFT_CENTER,
+                    *option,
+                    theme::body(),
+                    ink,
+                );
+                if l.focus {
+                    let circle = Rect::from_center_size(center, Vec2::splat(SELECTION_DIAMETER));
+                    paint_focus(ui, circle, ROUND);
+                }
+            }
+            changed
+        });
+        let mut response = row.response;
+        if row.inner {
+            response.mark_changed();
+        }
+        response
+    }
+}
+
+/// A detail page's trail: the parent, which returns to it, a chevron, and the elided title.
 #[must_use = "add it with `ui.add(..)`"]
 pub struct Breadcrumb<'a> {
     parent: &'a str,
@@ -211,15 +307,18 @@ pub struct Breadcrumb<'a> {
 }
 
 impl<'a> Breadcrumb<'a> {
+    /// One line of Body text, which also clears the chevron.
+    const LINE: f32 = 20.0;
+
     pub fn new(parent: &'a str, title: &'a str) -> Self {
         Self {
             parent,
             title,
-            height: size::CONTROL,
+            height: Self::LINE,
         }
     }
     pub fn height(mut self, height: f32) -> Self {
-        self.height = height.max(size::CONTROL);
+        self.height = height.max(Self::LINE);
         self
     }
 }
@@ -228,49 +327,31 @@ impl Widget for Breadcrumb<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
         let (row, _) =
             ui.allocate_exact_size(vec2(ui.available_width(), self.height), Sense::hover());
-        ui.scope_builder(
-            egui::UiBuilder::new()
-                .max_rect(row)
-                .layout(egui::Layout::left_to_right(egui::Align::Center)),
-            |ui| {
-                let response = ui.add(
-                    Button::secondary(self.parent)
-                        .with_icon("")
-                        .height(self.height),
-                );
-                let center = response.rect.left_center() + vec2(20.0, 0.0);
-                ui.painter().add(Shape::line(
-                    vec![
-                        center + vec2(2.0, -4.0),
-                        center - vec2(2.0, 0.0),
-                        center + vec2(2.0, 4.0),
-                    ],
-                    Stroke::new(1.0, color::ink()),
-                ));
-                let separator = ui.painter().text(
-                    response.rect.right_center() + vec2(space::S8, 0.0),
-                    Align2::LEFT_CENTER,
-                    "/",
-                    theme::body(),
-                    color::ink_4(),
-                );
-                let x = separator.right() + space::S8;
-                let title = fit_text(
-                    ui,
-                    self.title,
-                    theme::body_strong(),
-                    color::ink(),
-                    (row.right() - x).max(0.0),
-                );
-                paint_fit(
-                    ui,
-                    pos2(x, row.center().y - title.size().y / 2.0),
-                    title,
-                    color::ink(),
-                );
-                response
-            },
-        )
-        .inner
+        let y = row.center().y;
+        let width = text_width(ui, self.parent, &theme::body());
+        let link = Rect::from_min_size(row.min, vec2(width, row.height()));
+        let response = ui.interact(link, ui.id().with("breadcrumb"), Sense::click());
+        response.widget_info(|| WidgetInfo::labeled(WidgetType::Button, true, self.parent));
+        // Hover and keyboard focus lift the parent to Ink, never a ring.
+        let ink = if response.hovered() || response.has_focus() {
+            color::ink()
+        } else {
+            color::ink_3()
+        };
+        ui.painter().text(
+            row.left_center(),
+            Align2::LEFT_CENTER,
+            self.parent,
+            theme::body(),
+            ink,
+        );
+        let chevron = pos2(link.right() + space::S4 + size::ICON / 2.0, y);
+        paint_icon(ui.painter(), chevron, icon::CHEVRON_RIGHT, color::ink_3());
+        let x = chevron.x + size::ICON / 2.0 + space::S4;
+        let room = (row.right() - x).max(0.0);
+        let title = fit_text(ui, self.title, theme::body_strong(), color::ink(), room);
+        let top = y - title.size().y / 2.0;
+        paint_fit(ui, pos2(x, top), title, color::ink());
+        response
     }
 }

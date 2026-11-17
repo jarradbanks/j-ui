@@ -4,14 +4,13 @@ use egui::{Rect, Shape, UiBuilder, pos2, vec2};
 use egui_kittest::{Harness, SnapshotResults};
 use j_ui::{
     test_support,
-    theme::icon,
     tokens::color,
-    widgets::{Button, State, TextInput},
+    widgets::{State, TextInput},
 };
 
 const SCALES: [f32; 3] = [1.0, 1.25, 1.5];
 const VIEWPORTS: [[f32; 2]; 2] = [[1280.0, 720.0], [1920.0, 1080.0]];
-const HEIGHTS: [f32; 4] = [24.0, 32.0, 36.0, 48.0];
+const HEIGHTS: [f32; 4] = [36.0, 40.0, 48.0, 56.0];
 
 fn texts(shape: &Shape, out: &mut Vec<Rect>) {
     match shape {
@@ -62,12 +61,9 @@ fn focus_ring_is_complete_at_all_clipped_container_edges() {
                         if clipped {
                             ui.set_clip_rect(rect);
                         }
-                        ui.add(
-                            Button::icon(icon::SLIDERS, "Filters")
-                                .width(36.0)
-                                .height(36.0)
-                                .state(State::Focus),
-                        );
+                        // Buttons show no ring; a field does, outside its own bounds.
+                        let mut text = String::new();
+                        ui.add(TextInput::new(&mut text).width(36.0).state(State::Focus));
                     });
                 }
             });
@@ -194,7 +190,7 @@ fn single_line_placeholder_and_value_are_centred_and_padded() {
     snapshots.unwrap();
     assert!(failures.is_empty(), "{}", failures.join("\n"));
     println!(
-        "PASSED inputs: placeholder/value, heights 24/32/36/48, 1280x720/1920x1080, DPI 1.0/1.25/1.5, <=1 physical pixel"
+        "PASSED inputs: placeholder/value, heights 36/40/48/56, 1280x720/1920x1080, DPI 1.0/1.25/1.5, <=1 physical pixel"
     );
 }
 

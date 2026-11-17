@@ -1,11 +1,11 @@
 //! Dialogs: [`modal`] is the one frame every dialog uses (centred over a dimmed
-//! backdrop, Headline title, right-aligned [`action_footer`]); [`Dialog`] is the
+//! backdrop, Title heading, right-aligned [`action_footer`]); [`Dialog`] is the
 //! ready-made confirm dialog built on it.
 
 use egui::{Align, Context, Frame, Id, Layout, Response, RichText, Ui};
 
 use crate::theme;
-use crate::tokens::{radius, space};
+use crate::tokens::{color, radius, space};
 use crate::widgets::{Button, ButtonKind};
 
 /// Content-sized, right-aligned dialog or popup actions, in reading and Tab order:
@@ -19,10 +19,7 @@ pub fn action_footer<'a>(
 ) -> Vec<Response> {
     let id = ui.make_persistent_id("action_footer");
     let width = ui.available_width().max(1.0);
-    let buttons: Vec<_> = buttons
-        .into_iter()
-        .map(|b| b.height(28.0).wrap_at(width))
-        .collect();
+    let buttons: Vec<_> = buttons.into_iter().map(|b| b.wrap_at(width)).collect();
     let sizes: Vec<_> = buttons.iter().map(|b| b.desired_size(ui)).collect();
     let mut rows = Vec::new();
     let mut start = 0;
@@ -31,7 +28,7 @@ pub fn action_footer<'a>(
         let next = if i == start {
             size.x
         } else {
-            row_width + space::S8 + size.x
+            row_width + space::GAP + size.x
         };
         if next > width && i > start {
             rows.push((start..i, row_width));
@@ -46,7 +43,7 @@ pub fn action_footer<'a>(
     }
     let mut buttons = buttons.into_iter();
     ui.allocate_ui_with_layout(egui::vec2(width, 0.0), Layout::top_down(Align::Min), |ui| {
-        ui.spacing_mut().item_spacing = egui::Vec2::splat(space::S8);
+        ui.spacing_mut().item_spacing = egui::Vec2::splat(space::GAP);
         let mut responses = Vec::with_capacity(sizes.len());
         for (row, row_width) in rows {
             ui.allocate_ui_with_layout(
@@ -76,8 +73,16 @@ pub fn action_footer<'a>(
     .inner
 }
 
-/// The shared dialog frame: centred over the scrim, 12px corners, 16px padding and a
-/// Headline title, `width` wide but never wider than the window less 24px a side.
+/// A dialog's surface: Raised with a 1px border, 20px corners, 24px padding and the overlay
+/// shadow. [`modal`] uses it; use it directly for a dialog drawn in place.
+pub fn frame(style: &egui::Style) -> Frame {
+    Frame::popup(style)
+        .corner_radius(radius::DIALOG)
+        .inner_margin(space::DIALOG_PAD)
+}
+
+/// The shared dialog frame: centred over the scrim, 20px corners, 24px padding and a
+/// Title, `width` wide but never wider than the window less 24px a side.
 /// Put the body, then [`action_footer`], in `add_contents`. Esc or a backdrop click
 /// sets `should_close` on the response.
 pub fn modal<R>(
@@ -88,15 +93,10 @@ pub fn modal<R>(
     add_contents: impl FnOnce(&mut Ui) -> R,
 ) -> egui::ModalResponse<R> {
     egui::Modal::new(id)
-        .frame(
-            Frame::popup(&ctx.global_style())
-                .corner_radius(radius::DIALOG)
-                .inner_margin(space::S16),
-        )
+        .frame(frame(&ctx.global_style()))
         .show(ctx, |ui| {
             ui.set_width(width.min((ctx.content_rect().width() - 48.0).max(1.0)));
-            ui.label(RichText::new(title).font(theme::headline()));
-            ui.add_space(space::S8);
+            ui.label(RichText::new(title).font(theme::title()));
             add_contents(ui)
         })
 }
@@ -121,16 +121,17 @@ impl Dialog<'_> {
         let previous_rect = ctx.memory(|m| m.area_rect(id));
         let width = if self.long { 640.0 } else { 360.0 };
         let modal = modal(ctx, id, self.title, width, |ui| {
+            let body = RichText::new(self.body).color(color::ink_3());
             if self.long {
                 let height = ctx.content_rect().height() * 0.6;
                 egui::ScrollArea::vertical()
                     .min_scrolled_height(height)
                     .max_height(height)
-                    .show(ui, |ui| ui.label(self.body));
+                    .show(ui, |ui| ui.label(body));
             } else {
-                ui.label(self.body);
+                ui.label(body);
             }
-            ui.add_space(space::S16);
+            ui.add_space(space::S8);
             let buttons = self
                 .buttons
                 .iter()
