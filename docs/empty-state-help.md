@@ -5,6 +5,10 @@ gap, and created an empty accessibility label. The icon/title group therefore
 sat above its panel center. Help now contributes layout and a label only when
 present; actions remain optional and follow the last real text line.
 
+The icon now contributes its painted mesh height rather than a fixed 32pt slot.
+Its font stays 32pt and the group keeps 12pt gaps. This also centers shorter
+LIST icons with real help, without glyph-specific or consumer offsets.
+
 The fix preserves real help, wrapping, short-body scrolling, long translated
 actions, viewer inks and keyboard action access. It adds no consumer offset or
 public API. jclip removes its old export-queue body extension when adopting it.
@@ -12,12 +16,14 @@ public API. jclip removes its old export-queue body extension when adopting it.
 [Before and after](screenshots/empty-state-help/before-after.png) uses the same
 440×360 native egui fixture, Figtree/Dark at 100%. The `after-*` and `onest-*`
 images cover all three themes at 100% and 150%, with and without an action.
-They were rendered with isolated lavapipe and inspected. No snapshot golden
-was changed by this fix.
+The icon-geometry matrix adds LIST/FOLDER with and without help and actions
+for both fonts, all three themes and both scales. They were rendered with
+isolated lavapipe and inspected. The icon geometry correction updates the component/gallery goldens after
+inspection of their EmptyState-only changes.
 
 ## Regression and verification
 
-`tests/empty_state.rs::absent_help_has_no_label_gap_or_height` measures actual
+`tests/empty_state.rs::visible_icon_help_and_action_group_is_centered` measures actual
 icon bounds, accessible heading/action rectangles, raster bounds and absent
 accessibility labels. It failed on base `83a0f0c` with the visible group centered
 at y165.5 instead of y180. Real-help centering also runs at both scales; existing
@@ -40,11 +46,17 @@ the suite's primary font slots. Optional `EMPTY_STATE_EVIDENCE` saves the render
 matrix into an existing directory. These environment hooks affect tests only.
 
 The focused suite passes with Figtree and Onest: 6 passed, 0 failed each.
-Formatting and strict workspace/all-target Clippy pass (exit 0). The forced
+Formatting and strict workspace/all-target Clippy pass (exit 0). The final forced
 lavapipe workspace suite passes without snapshot update mode: 165 passed,
 0 failed, 0 ignored (exit 0). Scoped style checking passes with no failures;
-two optional evidence/font branches are informational review items. Exact
+the icon geometry diff has no review items. Exact
 commands and test summaries are in [verification](screenshots/empty-state-help/verification.txt).
 This is software-rendered component verification, not capture/GPU hardware or
 native Windows acceptance. The separate consumer migration and independent
 validator cover the jclip integration.
+
+The first icon-geometry full run exited 101: expected component/gallery golden
+changes and a debug-server input timing assertion (357ms under load). The
+disposable consumer viewer was stopped before the final comparison rerun; no
+server code or timing tolerance was changed. The unchanged consumer queue
+geometry test passes at 1280/1920 widths and 100%/150% DPI.

@@ -220,7 +220,7 @@ fn readable_theme_inks_and_type_sizes_keep_the_viewer_neutral() {
 }
 
 #[test]
-fn absent_help_has_no_label_gap_or_height() {
+fn visible_icon_help_and_action_group_is_centered() {
     use j_ui::{test_support, themes};
     if !test_support::gpu() {
         return;
@@ -231,7 +231,17 @@ fn absent_help_has_no_label_gap_or_height() {
         ("high-contrast", themes::HIGH_CONTRAST),
     ] {
         for ppp in [1.0, 1.5] {
-            for action in [false, true] {
+            for (glyph_name, glyph, help, action) in
+                [("folder", icon::FOLDER), ("list", icon::LIST)]
+                    .into_iter()
+                    .flat_map(|(name, glyph)| {
+                        ["", "Import video, audio, or images to start editing."]
+                            .into_iter()
+                            .flat_map(move |help| {
+                                [false, true].map(move |action| (name, glyph, help, action))
+                            })
+                    })
+            {
                 let mut fresh = true;
                 let mut h = Harness::builder()
                     .with_size([440.0, 360.0])
@@ -262,7 +272,7 @@ fn absent_help_has_no_label_gap_or_height() {
                             }
                             themes::apply(ui.ctx(), &palette);
                             state.body = ui.available_rect_before_wrap().intersect(ui.clip_rect());
-                            let empty = EmptyState::new(icon::FOLDER, "No Media Yet", "");
+                            let empty = EmptyState::new(glyph, "No Media Yet", help);
                             let empty = if action {
                                 empty.action("Import Media…")
                             } else {
@@ -276,21 +286,46 @@ fn absent_help_has_no_label_gap_or_height() {
                     );
                 h.run();
                 let title = h.get_by_label("No Media Yet").rect();
+                let help_rect = if help.is_empty() {
+                    Rect::NOTHING
+                } else {
+                    h.get_by_label(help).rect()
+                };
+                let icon = h
+                    .output()
+                    .shapes
+                    .iter()
+                    .find_map(|shape| {
+                        let egui::Shape::Text(text) = &shape.shape else {
+                            return None;
+                        };
+                        (text.galley.text() == glyph).then(|| text.visual_bounding_rect())
+                    })
+                    .unwrap();
                 let bottom = if action {
                     h.state().action.bottom()
-                } else {
+                } else if help.is_empty() {
                     title.bottom()
+                } else {
+                    help_rect.bottom()
                 };
-                let expected_height =
-                    32.0 + 12.0 + title.height() + if action { 12.0 + 36.0 } else { 0.0 };
+                let expected_height = icon.height()
+                    + 12.0
+                    + title.height()
+                    + if help.is_empty() {
+                        0.0
+                    } else {
+                        12.0 + help_rect.height()
+                    }
+                    + if action { 12.0 + 36.0 } else { 0.0 };
                 let expected_top = h.state().body.center().y - expected_height / 2.0;
                 let image = h.render().unwrap();
                 if let Some(output) = std::env::var_os("EMPTY_STATE_EVIDENCE") {
                     image
-                        .save(
-                            std::path::Path::new(&output)
-                                .join(format!("{name}-{ppp}-{action}.png")),
-                        )
+                        .save(std::path::Path::new(&output).join(format!(
+                            "{name}-{ppp}-{glyph_name}-help-{}-action-{action}.png",
+                            !help.is_empty()
+                        )))
                         .unwrap();
                 }
                 let body = h.state().body;
@@ -328,24 +363,13 @@ fn absent_help_has_no_label_gap_or_height() {
                     "raster {raster_top} vs {painted:?} at {ppp}"
                 );
                 assert!((raster_bottom as f32 - painted.bottom() * ppp).abs() <= 1.5);
-                let icon = h
-                    .output()
-                    .shapes
-                    .iter()
-                    .find_map(|shape| {
-                        let egui::Shape::Text(text) = &shape.shape else {
-                            return None;
-                        };
-                        (text.galley.text() == icon::FOLDER).then(|| text.visual_bounding_rect())
-                    })
-                    .unwrap();
-                let visible = icon.union(title).union(h.state().action);
+                let visible = icon.union(title).union(help_rect).union(h.state().action);
                 assert!(
                     (visible.center().y - h.state().body.center().y).abs() < 2.0,
                     "{name} {ppp} action={action}: {visible:?} vs {:?}",
                     h.state().body
                 );
-                assert!((title.top() - (expected_top + 44.0)).abs() <= 1.0);
+                assert!((title.top() - (expected_top + icon.height() + 12.0)).abs() <= 1.0);
                 assert!((bottom - (expected_top + expected_height)).abs() <= 1.0);
                 assert!(
                     h.query_all_by_label("").next().is_none(),

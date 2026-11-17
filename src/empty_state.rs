@@ -90,8 +90,14 @@ impl<'a> EmptyState<'a> {
                 .ceil()
                 + 2.0 * (space::button_pad() + 1.0)
         });
+        let icon = ui.painter().layout_no_wrap(
+            self.icon.into(),
+            egui::FontId::new(32.0, theme::icon_font().family),
+            muted,
+        );
+        let icon_height = icon.mesh_bounds.height();
         let group_width = width;
-        let height = 32.0
+        let height = icon_height
             + space::gap()
             + title.size().y
             + help
@@ -128,17 +134,13 @@ impl<'a> EmptyState<'a> {
                     vec2(group_width, height),
                 );
                 let center = content_rect.center().x;
-                let icon = ui.painter().layout_no_wrap(
-                    self.icon.into(),
-                    egui::FontId::new(32.0, theme::icon_font().family),
-                    muted,
-                );
                 ui.painter().galley(
-                    pos2(center, content_rect.top() + 16.0) - icon.mesh_bounds.center().to_vec2(),
+                    pos2(center, content_rect.top() + icon_height / 2.0)
+                        - icon.mesh_bounds.center().to_vec2(),
                     icon,
                     muted,
                 );
-                let mut y = content_rect.top() + 32.0 + space::gap();
+                let mut y = content_rect.top() + icon_height + space::gap();
                 for galley in std::iter::once(title).chain(help) {
                     let rect = Rect::from_min_size(
                         pos2(center - width / 2.0, y),
