@@ -12,6 +12,7 @@ pub struct Autocomplete<'a> {
     hint: Option<&'a str>,
     empty: &'a str,
     width: f32,
+    initially_open: bool,
 }
 
 impl<'a> Autocomplete<'a> {
@@ -22,6 +23,7 @@ impl<'a> Autocomplete<'a> {
             hint: None,
             empty: "",
             width: 240.0,
+            initially_open: false,
         }
     }
 
@@ -33,6 +35,12 @@ impl<'a> Autocomplete<'a> {
     /// What the menu says when nothing matches, such as "No matching fonts".
     pub fn empty(mut self, empty: &'a str) -> Self {
         self.empty = empty;
+        self
+    }
+
+    /// Shows suggestions before first focus, for a populated search preview.
+    pub fn initially_open(mut self, open: bool) -> Self {
+        self.initially_open = open;
         self
     }
 
@@ -107,11 +115,22 @@ impl Widget for Autocomplete<'_> {
         if !dismissed && (response.gained_focus() || response.changed()) {
             egui::Popup::open_id(ui.ctx(), popup);
         }
-        let wanted = matches.len().max(1) as f32 * size::CONTROL;
+        let used = id.with("used");
+        if response.gained_focus() || response.changed() {
+            ui.data_mut(|data| data.insert_temp(used, true));
+        }
+        let preview =
+            self.initially_open && !ui.data(|data| data.get_temp::<bool>(used).unwrap_or(false));
+        let visible = response.rect.intersects(ui.clip_rect());
+        let wanted = matches.len().max(1) as f32 * size::control();
         let (align, max_height) = menu_place(response.rect, ui.ctx().content_rect(), wanted);
-        egui::Popup::from_response(&response)
-            .id(popup)
-            .open_memory(None)
+        let menu = egui::Popup::from_response(&response).id(popup);
+        let menu = if preview || !visible {
+            menu.open(preview && visible)
+        } else {
+            menu.open_memory(None)
+        };
+        menu
             // The click that focuses the field would count as one outside the menu.
             .close_behavior(egui::PopupCloseBehavior::IgnoreClicks)
             .width(response.rect.width())
@@ -121,7 +140,7 @@ impl Widget for Autocomplete<'_> {
             .show(|ui| {
                 ui.spacing_mut().item_spacing.y = 0.0;
                 egui::ScrollArea::vertical()
-                    .max_height(max_height.max(size::CONTROL))
+                    .max_height(max_height.max(size::control()))
                     .show(ui, |ui| {
                         for (i, (option, hit)) in matches.iter().enumerate() {
                             let row = MenuRow::suggestion(option, hit.clone()).lit(i == active);
@@ -130,10 +149,10 @@ impl Widget for Autocomplete<'_> {
                             }
                         }
                         if matches.is_empty() && !self.empty.is_empty() {
-                            let size = vec2(ui.available_width(), size::CONTROL);
+                            let size = vec2(ui.available_width(), size::control());
                             let (row, _) = ui.allocate_exact_size(size, Sense::hover());
-                            let empty = fit_text(ui, self.empty, theme::body(), color::ink_3(), row.width() - 2.0 * space::FIELD_PAD);
-                            let x = row.left() + space::FIELD_PAD;
+                            let empty = fit_text(ui, self.empty, theme::body(), color::ink_3(), row.width() - 2.0 * space::field_pad());
+                            let x = row.left() + space::field_pad();
                             let rect = Rect::from_min_size(pos2(x, row.center().y - empty.size().y / 2.0), empty.size());
                             place(ui, rect, egui::Label::new(empty).selectable(false));
                         }
@@ -141,6 +160,7 @@ impl Widget for Autocomplete<'_> {
             });
         ui.data_mut(|d| d.insert_temp(popup, active));
         if let Some(option) = picked {
+            ui.data_mut(|data| data.insert_temp(used, true));
             *self.text = option.to_owned();
             egui::Popup::close_id(ui.ctx(), popup);
             response.mark_changed();
@@ -150,7 +170,7 @@ impl Widget for Autocomplete<'_> {
             // wait for its release, which picks the row above.
             egui::Popup::close_id(ui.ctx(), popup);
         }
-        let expanded = egui::Popup::is_id_open(ui.ctx(), popup);
+        let expanded = preview || egui::Popup::is_id_open(ui.ctx(), popup);
         ui.ctx().accesskit_node_builder(response.id, |node| {
             node.set_expanded(expanded);
             node.set_has_popup(egui::accesskit::HasPopup::Listbox);

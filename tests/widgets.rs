@@ -23,14 +23,16 @@ fn click_at(h: &Harness<'_, f64>, pos: Pos2) {
 
 #[test]
 fn slider_orientation_pointer_keyboard_steps_and_disabled() {
-    for vertical in [false, true] {
+    for (vertical, ticks) in [(false, false), (false, true), (true, false), (true, true)] {
         let mut fresh = true;
         let mut h = Harness::builder().with_size([240.0, 220.0]).build_ui_state(
             move |ui, value| {
                 if test_support::install_theme(ui, &mut fresh) {
                     return;
                 }
-                let slider = Slider::new(value, 1.0..=33.0, "Size").step(2.0);
+                let slider = Slider::new(value, 1.0..=33.0, "Size")
+                    .step(2.0)
+                    .show_ticks(ticks);
                 if vertical {
                     ui.add_sized([size::CONTROL, 160.0], slider.vertical());
                 } else {

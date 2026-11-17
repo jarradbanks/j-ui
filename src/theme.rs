@@ -8,6 +8,10 @@ use egui::{
     Style, TextStyle, Visuals,
 };
 
+mod component_style;
+pub(crate) use component_style::current as component_style;
+pub use component_style::{ComponentStyle, with_component_style};
+
 use crate::i18n;
 use crate::themes::{self, Palette};
 use crate::tokens::{font, radius, size, space};
@@ -69,42 +73,47 @@ pub fn semibold() -> FontFamily {
 }
 
 pub fn body() -> FontId {
-    FontId::new(font::BODY, FontFamily::Proportional)
+    FontId::new(font::body(), FontFamily::Proportional)
 }
 
 /// User content can mix scripts independently of the UI language.
 pub fn content() -> FontId {
-    FontId::new(font::BODY, FontFamily::Name("content".into()))
+    FontId::new(font::body(), FontFamily::Name("content".into()))
 }
 
 pub fn body_strong() -> FontId {
-    FontId::new(font::BODY, medium())
+    FontId::new(font::body(), medium())
 }
 
 /// SemiBold Body, for panel and section titles.
 pub fn panel_title() -> FontId {
-    FontId::new(font::BODY, semibold())
+    let size = if component_style() == ComponentStyle::Line {
+        font::title()
+    } else {
+        font::body()
+    };
+    FontId::new(size, semibold())
 }
 
 pub fn small() -> FontId {
-    FontId::new(font::SMALL, FontFamily::Proportional)
+    FontId::new(font::small(), FontFamily::Proportional)
 }
 
 /// Medium Small, for badges.
 pub fn small_strong() -> FontId {
-    FontId::new(font::SMALL, medium())
+    FontId::new(font::small(), medium())
 }
 
 pub fn title() -> FontId {
-    FontId::new(font::TITLE, semibold())
+    FontId::new(font::title(), semibold())
 }
 
 pub fn headline() -> FontId {
-    FontId::new(font::HEADLINE, semibold())
+    FontId::new(font::headline(), semibold())
 }
 
 pub fn display() -> FontId {
-    FontId::new(font::DISPLAY, semibold())
+    FontId::new(font::display(), semibold())
 }
 
 pub fn timecode() -> FontId {
@@ -115,7 +124,7 @@ pub fn timecode() -> FontId {
 pub fn text(text: impl Into<String>, font: FontId) -> egui::RichText {
     let heading = font.family == semibold();
     let leading = match () {
-        _ if font.size >= crate::tokens::font::HEADLINE => 1.25,
+        _ if font.size >= crate::tokens::font::headline() => 1.25,
         _ if heading => 1.3,
         _ => 1.45,
     };
@@ -128,7 +137,7 @@ pub fn text(text: impl Into<String>, font: FontId) -> egui::RichText {
 
 /// An 18px icon glyph.
 pub fn icon_font() -> FontId {
-    FontId::new(size::ICON, FontFamily::Name("icons".into()))
+    FontId::new(size::icon(), FontFamily::Name("icons".into()))
 }
 
 /// Figtree's variable face (weights 300 to 900) with tabular figures frozen in.
@@ -245,18 +254,18 @@ pub fn style() -> Style {
         (TextStyle::Heading, headline()),
         (
             TextStyle::Monospace,
-            FontId::new(font::BODY, FontFamily::Monospace),
+            FontId::new(font::body(), FontFamily::Monospace),
         ),
     ]
     .into();
     let s = &mut style.spacing;
-    s.item_spacing = egui::Vec2::splat(space::GAP);
-    s.button_padding = egui::vec2(space::BUTTON_PAD, 0.0);
-    s.interact_size = egui::vec2(size::CONTROL, size::CONTROL);
+    s.item_spacing = egui::Vec2::splat(space::gap());
+    s.button_padding = egui::vec2(space::button_pad(), 0.0);
+    s.interact_size = egui::vec2(size::control(), size::control());
     s.icon_width = 18.0;
     s.icon_width_inner = 10.0;
     s.icon_spacing = space::S8;
-    s.window_margin = egui::Margin::same(space::DIALOG_PAD as i8);
+    s.window_margin = egui::Margin::same(space::dialog_pad() as i8);
     s.menu_margin = egui::Margin::same(space::S4 as i8);
     s.combo_height = 240.0;
     s.scroll.bar_width = 4.0;
@@ -276,7 +285,7 @@ pub fn visuals_with(p: &Palette) -> Visuals {
     } else {
         Visuals::dark()
     };
-    let control = CornerRadius::same(radius::CONTROL);
+    let control = CornerRadius::same(radius::control());
     let w = &mut v.widgets;
     w.noninteractive.bg_fill = color.panel;
     w.noninteractive.weak_bg_fill = color.panel;
@@ -324,8 +333,8 @@ pub fn visuals_with(p: &Palette) -> Visuals {
     v.panel_fill = color.panel;
     v.window_fill = color.raised;
     v.window_stroke = Stroke::new(1.0, color.border);
-    v.window_corner_radius = CornerRadius::same(radius::DIALOG);
-    v.menu_corner_radius = CornerRadius::same(radius::PANEL);
+    v.window_corner_radius = CornerRadius::same(radius::dialog());
+    v.menu_corner_radius = CornerRadius::same(radius::panel());
     let overlay = Shadow {
         offset: [0, 8],
         blur: 24,

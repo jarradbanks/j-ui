@@ -12,7 +12,7 @@ pub const SELECTION_DIAMETER: f32 = 18.0;
 /// Paints a circular selection indicator without adding interaction or a focus ring.
 pub fn paint_selection(ui: &Ui, tile: Rect, selected: bool, mixed: bool) {
     let center = tile.center();
-    let radius = SELECTION_DIAMETER / 2.0;
+    let radius = size::selection() / 2.0;
     let blue = color::blue();
     ui.painter().circle_filled(
         center,
@@ -134,11 +134,11 @@ impl Widget for SelectionCheckbox<'_> {
         if l.hover && !l.disabled {
             ui.painter().circle_stroke(
                 rect.center(),
-                SELECTION_DIAMETER / 2.0 - 0.5,
+                size::selection() / 2.0 - 0.5,
                 Stroke::new(1.0, color::light_blue()),
             );
         }
-        let circle = Rect::from_center_size(rect.center(), Vec2::splat(SELECTION_DIAMETER));
+        let circle = Rect::from_center_size(rect.center(), Vec2::splat(size::selection()));
         paint_focus(ui, circle, ROUND, response.id, l.focus);
         response.on_hover_text(self.label)
     }
@@ -176,11 +176,11 @@ impl<'a> Toggle<'a> {
 
 impl Widget for Toggle<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let size = vec2(2.0 * SELECTION_DIAMETER - 4.0, SELECTION_DIAMETER);
+        let size = vec2(2.0 * size::selection() - 4.0, size::selection());
         let desired = if self.show_label {
             vec2(
                 size.x + space::S8 + text_width(ui, self.label, &theme::body()),
-                size::CONTROL,
+                size::control(),
             )
         } else {
             size
@@ -203,7 +203,7 @@ impl Widget for Toggle<'_> {
             node.set_role(egui::accesskit::Role::Switch)
         });
         let l = look(&response, self.state);
-        let contrast_outline = color::selection_fill() != color::border();
+        let contrast_outline = color::surface_outline() != Color32::TRANSPARENT;
         let fill = if l.disabled || (contrast_outline && !*self.value) {
             color::selection_fill()
         } else if *self.value {
@@ -278,15 +278,15 @@ impl Widget for RadioGroup<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
         let first_unselected = (0..self.options.len()).find(|i| i != self.selected);
         let row = ui.horizontal(|ui| {
-            ui.spacing_mut().item_spacing.x = space::GAP;
+            ui.spacing_mut().item_spacing.x = space::gap();
             let mut changed = false;
             for (i, option) in self.options.iter().enumerate() {
                 let pinned = match Some(i) == first_unselected || self.state == State::Disabled {
                     true => self.state,
                     false => State::Live,
                 };
-                let width = SELECTION_DIAMETER + space::S8 + text_width(ui, option, &theme::body());
-                let size = vec2(width.ceil(), size::CONTROL);
+                let width = size::selection() + space::S8 + text_width(ui, option, &theme::body());
+                let size = vec2(width.ceil(), size::control());
                 let (rect, response) = allocate(ui, size, pinned, Sense::click());
                 let on = i == *self.selected;
                 response.widget_info(|| {
@@ -302,8 +302,8 @@ impl Widget for RadioGroup<'_> {
                     changed = true;
                 }
                 let l = look(&response, pinned);
-                let center = pos2(rect.left() + SELECTION_DIAMETER / 2.0, rect.center().y);
-                let r = SELECTION_DIAMETER / 2.0;
+                let center = pos2(rect.left() + size::selection() / 2.0, rect.center().y);
+                let r = size::selection() / 2.0;
                 let (edge, ink) = match () {
                     _ if l.disabled => (color::border(), color::ink_4()),
                     _ if l.focus => (color::light_blue(), color::ink()),
@@ -319,7 +319,7 @@ impl Widget for RadioGroup<'_> {
                     let ring = edge;
                     ui.painter().circle_filled(center, r, ring);
                     // The ring is 1/3.5 of the diameter wide; the rest is the white dot.
-                    let dot = r - SELECTION_DIAMETER / 3.5;
+                    let dot = r - size::selection() / 3.5;
                     ui.painter().circle_filled(center, dot, color::WHITE);
                 } else {
                     let stroke = hairline(ui.ctx(), edge);
@@ -328,16 +328,13 @@ impl Widget for RadioGroup<'_> {
                 }
                 paint_text(
                     ui,
-                    pos2(
-                        rect.left() + SELECTION_DIAMETER + space::S8,
-                        rect.center().y,
-                    ),
+                    pos2(rect.left() + size::selection() + space::S8, rect.center().y),
                     Align2::LEFT_CENTER,
                     option,
                     theme::body(),
                     ink,
                 );
-                let circle = Rect::from_center_size(center, Vec2::splat(SELECTION_DIAMETER));
+                let circle = Rect::from_center_size(center, Vec2::splat(size::selection()));
                 paint_focus(ui, circle, ROUND, response.id, l.focus);
             }
             changed
@@ -398,9 +395,9 @@ impl Widget for Breadcrumb<'_> {
             theme::body(),
             ink,
         );
-        let chevron = pos2(link.right() + space::S4 + size::ICON / 2.0, y);
+        let chevron = pos2(link.right() + space::S4 + size::icon() / 2.0, y);
         paint_icon(ui.painter(), chevron, icon::CHEVRON_RIGHT, color::ink_3());
-        let x = chevron.x + size::ICON / 2.0 + space::S4;
+        let x = chevron.x + size::icon() / 2.0 + space::S4;
         let room = (row.right() - x).max(0.0);
         let title = fit_text(ui, self.title, theme::body_strong(), color::ink(), room);
         let pos = text_pos(&title, x, y);

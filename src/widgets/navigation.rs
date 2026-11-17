@@ -21,7 +21,7 @@ pub(crate) fn tab_strip(
         .collect();
     let needed = |n: usize| widths[..n].iter().sum::<f32>() + GAP * n.saturating_sub(1) as f32;
     let avail = (right - left).max(0.0);
-    let menu = size::CONTROL + space::S8;
+    let menu = size::control() + space::S8;
     let mut shown = labels.len();
     if needed(shown) > avail {
         while shown > 1 && needed(shown) + menu > avail {
@@ -66,8 +66,8 @@ pub(crate) fn tab_strip(
     }
     if overflow {
         let slot = Rect::from_min_size(
-            pos2(x - GAP + space::S8, row.center().y - size::CONTROL / 2.0),
-            Vec2::splat(size::CONTROL),
+            pos2(x - GAP + space::S8, row.center().y - size::control() / 2.0),
+            Vec2::splat(size::control()),
         );
         let name = tr!(CATALOG, "panel.more_tabs");
         let r = place(ui, slot, Button::icon(icon::CHEVRON_DOWN, name));
@@ -98,7 +98,7 @@ impl<'a> Tabs<'a> {
 
 impl Widget for Tabs<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let size = vec2(ui.available_width(), size::HEADER);
+        let size = vec2(ui.available_width(), size::header());
         let (rect, mut response) = allocate(ui, size, State::Live, Sense::hover());
         let rule = hairline(ui.ctx(), color::border());
         ui.painter()
@@ -128,7 +128,7 @@ impl<'a> NavRow<'a> {
 impl Widget for NavRow<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
         const PAD: f32 = 10.0;
-        let size = vec2(ui.available_width(), size::CONTROL);
+        let size = vec2(ui.available_width(), size::control().max(28.0));
         let (rect, response) = allocate(ui, size, State::Live, Sense::click());
         response.widget_info(|| {
             let kind = WidgetType::SelectableLabel;
@@ -142,7 +142,7 @@ impl Widget for NavRow<'_> {
         };
         let fill = motion::color(ui.ctx(), response.id.with("fill"), fill);
         ui.painter()
-            .rect_filled(rect, CornerRadius::same(radius::CONTROL), fill);
+            .rect_filled(rect, CornerRadius::same(radius::control()), fill);
         let (font, ink) = match self.selected {
             true => (theme::body_strong(), color::ink()),
             false => (theme::body(), color::ink_2()),

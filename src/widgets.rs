@@ -134,10 +134,10 @@ fn paint_spinner(ui: &Ui, center: egui::Pos2, ink: Color32) {
     let points = (0..=24)
         .map(|i| {
             let angle = turn + 0.75 * TAU * i as f32 / 24.0;
-            center + 0.375 * size::ICON * vec2(angle.cos(), angle.sin())
+            center + 0.375 * size::icon() * vec2(angle.cos(), angle.sin())
         })
         .collect();
-    let stroke = Stroke::new(size::ICON / 12.0, ink);
+    let stroke = Stroke::new(size::icon() / 12.0, ink);
     ui.painter().add(Shape::line(points, stroke));
     ui.ctx().request_repaint();
 }
@@ -301,7 +301,7 @@ impl<'a> Button<'a> {
 
     fn label_galley(&self, ui: &Ui) -> Arc<Galley> {
         let icon = if self.icon.is_some() || self.loading {
-            size::ICON + space::S8
+            size::icon() + space::S8
         } else {
             0.0
         };
@@ -309,7 +309,7 @@ impl<'a> Button<'a> {
             self.label.to_owned(),
             theme::body_strong(),
             Color32::WHITE,
-            (self.wrap_width - 2.0 * (space::BUTTON_PAD + 1.0) - icon).max(1.0),
+            (self.wrap_width - 2.0 * (space::button_pad() + 1.0) - icon).max(1.0),
         )
     }
 
@@ -317,18 +317,18 @@ impl<'a> Button<'a> {
         let side = if self.small {
             size::SMALL_CONTROL
         } else {
-            size::CONTROL
+            size::control()
         };
         let label = self.label_galley(ui);
         let icon = if self.icon.is_some() || self.loading {
-            size::ICON + space::S8
+            size::icon() + space::S8
         } else {
             0.0
         };
         let width = if self.icon_only {
             side
         } else {
-            2.0 * (space::BUTTON_PAD + 1.0) + icon + label.size().x
+            2.0 * (space::button_pad() + 1.0) + icon + label.size().x
         };
         let height = if self.icon_only {
             side
@@ -350,12 +350,12 @@ impl Widget for Button<'_> {
         let desired = self.desired_size(ui);
         let content_width = galley.size().x
             + if has_icon {
-                size::ICON + space::S8
+                size::icon() + space::S8
             } else {
                 0.0
             };
-        let pad =
-            ((desired.x - 2.0 * (space::BUTTON_PAD + 1.0) - content_width).floor() / 2.0).max(0.0);
+        let pad = ((desired.x - 2.0 * (space::button_pad() + 1.0) - content_width).floor() / 2.0)
+            .max(0.0);
         let (rect, response) = allocate(ui, desired, self.state, Sense::click());
         response.widget_info(|| {
             WidgetInfo::labeled(
@@ -371,7 +371,7 @@ impl Widget for Button<'_> {
         let id = response.id;
         // Keyboard focus shows the hover look, never a ring.
         let (fill, ink) = match self.kind {
-            _ if l.disabled => (color::selection_fill(), color::ink_4()),
+            _ if l.disabled => (color::button_fill(), color::ink_4()),
             ButtonKind::Primary if l.pressed => (color::BLUE_PRESSED, color::WHITE),
             ButtonKind::Primary => {
                 let lit = l.hover || l.focus;
@@ -386,8 +386,10 @@ impl Widget for Button<'_> {
                 let lit = l.hover || l.pressed;
                 let fill = if lit {
                     color::raised()
-                } else {
+                } else if l.focus {
                     color::selection_fill()
+                } else {
+                    color::button_fill()
                 };
                 (fill, color::ink())
             }
@@ -412,27 +414,35 @@ impl Widget for Button<'_> {
         let ink = motion::color(ui.ctx(), id.with("ink"), ink);
         let fill = motion::color(ui.ctx(), id.with("fill"), fill);
         let corner = if self.small {
-            radius::SMALL
+            radius::small()
         } else {
-            radius::CONTROL
+            radius::control()
         };
         ui.painter()
             .rect_filled(rect, CornerRadius::same(corner), fill);
-        ui.painter()
-            .add(border(ui, rect, corner, color::surface_outline()));
+        ui.painter().add(border(
+            ui,
+            rect,
+            corner,
+            if self.kind == ButtonKind::Secondary || l.disabled {
+                color::control_outline()
+            } else {
+                color::surface_outline()
+            },
+        ));
         let mut x = if has_label {
-            rect.left() + space::BUTTON_PAD + 1.0 + pad
+            rect.left() + space::button_pad() + 1.0 + pad
         } else {
-            rect.center().x - size::ICON / 2.0
+            rect.center().x - size::icon() / 2.0
         };
         if has_icon {
-            let center = pos2(x + size::ICON / 2.0, rect.center().y);
+            let center = pos2(x + size::icon() / 2.0, rect.center().y);
             if self.loading {
                 paint_spinner(ui, center, ink);
             } else if let Some(glyph) = self.icon {
                 paint_icon(ui.painter(), center, glyph, ink);
             }
-            x += size::ICON + space::S8;
+            x += size::icon() + space::S8;
         }
         if has_label {
             ui.painter().galley_with_override_text_color(
@@ -447,18 +457,26 @@ impl Widget for Button<'_> {
 
 /// Paints a field's frame into `slot`: a borderless Ground fill, a Red border on error, and
 /// on focus a Blue border with the focus ring.
-fn paint_field(ui: &Ui, slot: egui::layers::ShapeIdx, rect: Rect, id: Id, l: Look, error: bool) {
+fn paint_field(
+    ui: &Ui,
+    slot: egui::layers::ShapeIdx,
+    rect: Rect,
+    id: Id,
+    l: Look,
+    error: bool,
+    fill: Option<Color32>,
+) {
     let focus = l.focus && !l.disabled;
     let mut shapes = vec![Shape::rect_filled(
         rect,
-        CornerRadius::same(radius::CONTROL),
-        color::ground(),
+        CornerRadius::same(radius::control()),
+        fill.unwrap_or_else(color::field_fill),
     )];
     let stroke = match () {
         _ if l.disabled => None,
         _ if error => Some(color::red()),
         _ if focus => Some(color::blue()),
-        _ if color::selection_fill() != color::border() => Some(color::border()),
+        _ if color::control_outline() != Color32::TRANSPARENT => Some(color::control_outline()),
         _ => None,
     };
     let edge = motion::color(
@@ -466,23 +484,23 @@ fn paint_field(ui: &Ui, slot: egui::layers::ShapeIdx, rect: Rect, id: Id, l: Loo
         id.with("edge"),
         stroke.unwrap_or(Color32::TRANSPARENT),
     );
-    shapes.push(border(ui, rect, radius::CONTROL, edge));
+    shapes.push(border(ui, rect, radius::control(), edge));
     ui.painter().set(slot, Shape::Vec(shapes));
-    paint_focus(ui, rect, radius::CONTROL, id, focus);
+    paint_focus(ui, rect, radius::control(), id, focus);
 }
 
 /// Paints an optional prefix (Ink 3) at the field's left padding; returns where the value starts.
 fn paint_prefix(ui: &Ui, rect: Rect, prefix: Option<&str>, glyph: Option<&str>) -> f32 {
-    let mut x = rect.left() + space::FIELD_PAD + 1.0;
+    let mut x = rect.left() + space::field_pad() + 1.0;
     let y = rect.center().y;
     if let Some(glyph) = glyph {
         paint_icon(
             ui.painter(),
-            pos2(x + size::ICON / 2.0, y),
+            pos2(x + size::icon() / 2.0, y),
             glyph,
             color::ink_3(),
         );
-        x += size::ICON + space::S8;
+        x += size::icon() + space::S8;
     }
     if let Some(prefix) = prefix {
         let r = paint_text(
@@ -536,7 +554,7 @@ impl<'a> TextInput<'a> {
             width: 160.0,
             rows: 1,
             state: State::Live,
-            height: size::CONTROL,
+            height: size::control(),
             clear_label: None,
         }
     }
@@ -590,7 +608,7 @@ impl<'a> TextInput<'a> {
 
     /// Minimum single-line height; the text and clear button stay vertically centred.
     pub fn height(mut self, height: f32) -> Self {
-        self.height = height.max(size::CONTROL);
+        self.height = height.max(size::control());
         self
     }
 
@@ -632,7 +650,7 @@ impl Widget for TextInput<'_> {
                         label,
                     )
                 });
-            let mut right = clear.map_or(rect.right() - space::FIELD_PAD - 1.0, |(r, _)| {
+            let mut right = clear.map_or(rect.right() - space::field_pad() - 1.0, |(r, _)| {
                 r.left() - space::S4
             });
             if let Some(suffix) = self.suffix {
@@ -702,7 +720,7 @@ impl Widget for TextInput<'_> {
             });
             let mut l = look(&response, self.state);
             l.hover |= self.state == State::Live && ui.rect_contains_pointer(rect);
-            paint_field(ui, frame, rect, response.id, l, self.error.is_some());
+            paint_field(ui, frame, rect, response.id, l, self.error.is_some(), None);
             if let Some((clear, label)) = clear {
                 let button = Button::icon(icon::X, label).small();
                 let button = |ui: &mut Ui| ui.add_enabled(!disabled, button);
@@ -755,7 +773,7 @@ impl Widget for Swatches<'_> {
         let (rect, mut response) = allocate(ui, vec2(width, side), self.state, Sense::hover());
         let disabled = self.state == State::Disabled || !ui.is_enabled();
         let first_unselected = (0..self.colors.len()).find(|i| i != self.selected);
-        let corner = CornerRadius::same(radius::SMALL);
+        let corner = CornerRadius::same(radius::small());
         for (i, c) in self.colors.iter().enumerate() {
             let x = rect.left() + i as f32 * (side + space::S4);
             let swatch = Rect::from_min_size(pos2(x, rect.top()), Vec2::splat(side));
@@ -786,7 +804,7 @@ impl Widget for Swatches<'_> {
             } else {
                 color::border_strong()
             };
-            ui.painter().add(border(ui, swatch, radius::SMALL, edge));
+            ui.painter().add(border(ui, swatch, radius::small(), edge));
             if on {
                 ui.painter().rect_stroke(
                     swatch,
@@ -795,7 +813,7 @@ impl Widget for Swatches<'_> {
                     StrokeKind::Outside,
                 );
             }
-            paint_focus(ui, swatch, radius::SMALL, r.id, l.focus);
+            paint_focus(ui, swatch, radius::small(), r.id, l.focus);
         }
         response
     }
@@ -877,7 +895,7 @@ impl Widget for DragField<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
         let (rect, mut response) = allocate(
             ui,
-            vec2(self.width, size::CONTROL),
+            vec2(self.width, size::control()),
             self.state,
             Sense::click_and_drag(),
         );
@@ -896,7 +914,7 @@ impl Widget for DragField<'_> {
         if let Some(mut buffer) = editing {
             let row = ui.fonts_mut(|f| f.row_height(&theme::body()));
             let edit_rect = Rect::from_x_y_ranges(
-                x..=rect.right() - space::FIELD_PAD,
+                x..=rect.right() - space::field_pad(),
                 rect.center().y - row / 2.0..=rect.center().y + row / 2.0,
             );
             let edit = place(
@@ -961,7 +979,7 @@ impl Widget for DragField<'_> {
         });
         let mut l = look(&response, self.state);
         l.focus |= self.state == State::Live && focus;
-        paint_field(ui, frame, rect, response.id, l, false);
+        paint_field(ui, frame, rect, response.id, l, false, None);
         response
     }
 }
@@ -1058,6 +1076,7 @@ pub struct Select<'a> {
     glyph: Option<&'static str>,
     state: State,
     placeholder: bool,
+    fill: Option<Color32>,
 }
 
 impl<'a> Select<'a> {
@@ -1065,10 +1084,11 @@ impl<'a> Select<'a> {
         Self {
             current,
             width: 120.0,
-            height: size::CONTROL,
+            height: size::control(),
             glyph: None,
             state: State::Live,
             placeholder: false,
+            fill: None,
         }
     }
     pub fn width(mut self, width: f32) -> Self {
@@ -1076,7 +1096,7 @@ impl<'a> Select<'a> {
         self
     }
     pub fn height(mut self, height: f32) -> Self {
-        self.height = height.max(size::CONTROL);
+        self.height = height.max(size::control());
         self
     }
     pub fn with_icon(mut self, glyph: &'static str) -> Self {
@@ -1106,7 +1126,7 @@ impl<'a> Select<'a> {
         // An open menu keeps the field's focus look.
         l.focus |= egui::Popup::is_id_open(ui.ctx(), egui::Popup::default_response_id(&response));
         let frame = ui.painter().add(Shape::Noop);
-        paint_field(ui, frame, rect, response.id, l, false);
+        paint_field(ui, frame, rect, response.id, l, false, self.fill);
         let ink = match () {
             _ if l.disabled => color::ink_4(),
             _ if self.placeholder => color::ink_2(),
@@ -1117,9 +1137,9 @@ impl<'a> Select<'a> {
         } else {
             color::ink_3()
         };
-        let chevron_x = rect.right() - space::FIELD_PAD - 1.0 - size::ICON / 2.0;
+        let chevron_x = rect.right() - space::field_pad() - 1.0 - size::icon() / 2.0;
         let left = paint_prefix(ui, rect, None, self.glyph);
-        let room = chevron_x - size::ICON / 2.0 - space::S8 - left;
+        let room = chevron_x - size::icon() / 2.0 - space::S8 - left;
         let text = fit_text(ui, self.current, theme::body(), ink, room);
         let elided = text.elided;
         paint_left(ui, left, rect.center().y, text, ink);
@@ -1149,6 +1169,7 @@ pub struct Dropdown<'a> {
     width: f32,
     state: State,
     bounds: Option<Rect>,
+    fill: Option<Color32>,
     placeholder: &'a str,
     height: f32,
     glyph: Option<&'static str>,
@@ -1162,10 +1183,17 @@ impl<'a> Dropdown<'a> {
             width: 120.0,
             state: State::Live,
             bounds: None,
+            fill: None,
             placeholder: "",
-            height: size::CONTROL,
+            height: size::control(),
             glyph: None,
         }
+    }
+
+    /// Overrides the field fill when embedded in a different surface.
+    pub fn fill(mut self, fill: Color32) -> Self {
+        self.fill = Some(fill);
+        self
     }
 
     /// What the field shows, in Ink 2, while `selected` is past the options, such as "Custom"
@@ -1181,7 +1209,7 @@ impl<'a> Dropdown<'a> {
     }
 
     pub fn height(mut self, height: f32) -> Self {
-        self.height = height.max(size::CONTROL);
+        self.height = height.max(size::control());
         self
     }
 
@@ -1214,6 +1242,7 @@ impl Widget for Dropdown<'_> {
             glyph: self.glyph,
             state: self.state,
             placeholder: picked.is_none(),
+            fill: self.fill,
         }
         .show(ui);
         let rect = response.rect;
@@ -1263,7 +1292,7 @@ impl Widget for Dropdown<'_> {
         }
         let screen = ui.ctx().content_rect();
         let bounds = self.bounds.map_or(screen, |b| b.intersect(screen));
-        let wanted = self.options.len() as f32 * size::CONTROL;
+        let wanted = self.options.len() as f32 * size::control();
         let (align, max_height) = menu_place(rect, bounds, wanted);
         let popup = egui::Popup::menu(&response)
             .width(rect.width())
@@ -1273,7 +1302,7 @@ impl Widget for Dropdown<'_> {
             .show(|ui| {
                 ui.spacing_mut().item_spacing.y = 0.0;
                 egui::ScrollArea::vertical()
-                    .max_height(max_height.max(size::CONTROL))
+                    .max_height(max_height.max(size::control()))
                     .show(ui, |ui| {
                         for (i, option) in self.options.iter().enumerate() {
                             let r = ui.add(MenuRow::option(option, i == *self.selected));
@@ -1399,7 +1428,7 @@ impl Widget for MenuRow<'_> {
         ui.add_enabled_ui(self.enabled, |ui| {
             let width = ui.available_width();
             let (rect, response) =
-                ui.allocate_exact_size(vec2(width, size::CONTROL), Sense::click());
+                ui.allocate_exact_size(vec2(width, size::control()), Sense::click());
             response.widget_info(|| {
                 WidgetInfo::selected(
                     WidgetType::SelectableLabel,
@@ -1410,14 +1439,15 @@ impl Widget for MenuRow<'_> {
             });
             let enabled = response.enabled();
             let lit = enabled && (self.lit || response.hovered() || response.has_focus());
-            let fill = if lit {
-                color::selection_fill()
-            } else {
-                Color32::TRANSPARENT
+            let fill = match () {
+                _ if !enabled => Color32::TRANSPARENT,
+                _ if self.lit || response.hovered() => color::neutral_fill(),
+                _ if response.has_focus() => color::selection_fill(),
+                _ => Color32::TRANSPARENT,
             };
             let fill = motion::color(ui.ctx(), response.id.with("fill"), fill);
             ui.painter()
-                .rect_filled(rect, CornerRadius::same(radius::SMALL), fill);
+                .rect_filled(rect, CornerRadius::same(radius::small()), fill);
             let option = self.slot == CheckSlot::Trailing;
             let ink = match () {
                 _ if !enabled => color::ink_4(),
@@ -1432,18 +1462,18 @@ impl Widget for MenuRow<'_> {
                 theme::body()
             };
             let (mut left, mut right) = (
-                rect.left() + space::FIELD_PAD,
-                rect.right() - space::FIELD_PAD,
+                rect.left() + space::field_pad(),
+                rect.right() - space::field_pad(),
             );
             let y = rect.center().y;
             let check_x = match self.slot {
                 CheckSlot::Leading => {
-                    left += size::ICON + space::S8;
-                    left - space::S8 - size::ICON / 2.0
+                    left += size::icon() + space::S8;
+                    left - space::S8 - size::icon() / 2.0
                 }
                 CheckSlot::Trailing => {
-                    right -= size::ICON + space::S8;
-                    right + space::S8 + size::ICON / 2.0
+                    right -= size::icon() + space::S8;
+                    right + space::S8 + size::icon() / 2.0
                 }
                 CheckSlot::None => 0.0,
             };
@@ -1509,7 +1539,7 @@ impl<'a> Segmented<'a> {
             state: State::Live,
             off: &[],
             tips: &[],
-            height: size::CONTROL,
+            height: size::control(),
             width: None,
             pills: false,
             track: None,
@@ -1517,7 +1547,7 @@ impl<'a> Segmented<'a> {
     }
 
     pub fn height(mut self, height: f32) -> Self {
-        self.height = height.max(size::CONTROL);
+        self.height = height.max(size::control());
         self
     }
 
@@ -1566,9 +1596,9 @@ impl Widget for Segmented<'_> {
             None => theme::body_strong(),
         };
         let (pad, gap, side) = if self.pills {
-            (0.0, space::S4, space::BUTTON_PAD)
+            (0.0, space::S4, space::button_pad())
         } else {
-            (3.0, 2.0, space::BUTTON_PAD - 2.0)
+            (3.0, 2.0, space::button_pad() - 2.0)
         };
         let mut widths: Vec<f32> = self
             .options
@@ -1599,27 +1629,24 @@ impl Widget for Segmented<'_> {
         // Pills stand alone; segments share a track.
         let track = match self.pills {
             true => self.track,
-            false => Some(self.track.unwrap_or_else(color::ground)),
+            false => Some(self.track.unwrap_or_else(color::segment_track)),
         };
         if let Some(track) = track {
             ui.painter()
-                .rect_filled(rect, CornerRadius::same(radius::CONTROL), track);
+                .rect_filled(rect, CornerRadius::same(radius::control()), track);
         }
         if !self.pills {
-            ui.painter()
-                .add(border(ui, rect, radius::CONTROL, color::surface_outline()));
+            ui.painter().add(border(
+                ui,
+                rect,
+                radius::control(),
+                color::control_outline(),
+            ));
         }
         let (corner, selected_fill) = if self.pills {
             ((self.height / 2.0) as u8, color::selection_fill())
         } else {
-            (
-                radius::SMALL,
-                if color::surface_outline() == Color32::TRANSPARENT {
-                    color::raised()
-                } else {
-                    color::selection_fill()
-                },
-            )
+            (radius::small(), color::segment_fill())
         };
         let first_unselected = (0..self.options.len()).find(|i| i != self.selected);
         let mut x = rect.left() + pad;
@@ -1778,11 +1805,11 @@ impl<'a> Checkbox<'a> {
 
 impl Widget for Checkbox<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let box_size = SELECTION_DIAMETER;
+        let box_size = size::selection();
         let width = box_size + space::S8 + text_width(ui, self.label, &theme::body());
         let (rect, mut response) = allocate(
             ui,
-            vec2(width.ceil(), size::CONTROL),
+            vec2(width.ceil(), size::control()),
             self.state,
             Sense::click(),
         );
@@ -1805,7 +1832,7 @@ impl Widget for Checkbox<'_> {
             Vec2::splat(box_size),
         )
         .round_to_pixels(ppp);
-        let corner = CornerRadius::same(radius::SMALL);
+        let corner = CornerRadius::same(radius::small());
         let (fill, edge, tick) = match () {
             _ if l.disabled => (color::raised(), color::border(), color::ink_4()),
             _ if *self.checked => (color::blue(), color::blue(), color::WHITE),
@@ -1815,7 +1842,7 @@ impl Widget for Checkbox<'_> {
         let fill = motion::color(ui.ctx(), response.id.with("fill"), fill);
         let edge = motion::color(ui.ctx(), response.id.with("edge"), edge);
         ui.painter().rect_filled(check, corner, fill);
-        ui.painter().add(border(ui, check, radius::SMALL, edge));
+        ui.painter().add(border(ui, check, radius::small(), edge));
         if *self.checked {
             paint_tick(ui, check, tick);
         }
@@ -1832,7 +1859,7 @@ impl Widget for Checkbox<'_> {
             theme::body(),
             ink,
         );
-        paint_focus(ui, check, radius::SMALL, response.id, l.focus);
+        paint_focus(ui, check, radius::small(), response.id, l.focus);
         response
     }
 }
@@ -1918,7 +1945,7 @@ impl Widget for KeyButton<'_> {
         let lit = l.hover || l.pressed;
         let fill = hover_fade(ui, response.id, lit, rest, color::raised());
         ui.painter()
-            .rect_filled(rect, CornerRadius::same(radius::SMALL), fill);
+            .rect_filled(rect, CornerRadius::same(radius::small()), fill);
         let ink = match () {
             _ if l.disabled => color::ink_4(),
             _ if lit => color::ink(),
@@ -1969,6 +1996,7 @@ pub struct Slider<'a> {
     value: &'a mut f64,
     range: std::ops::RangeInclusive<f64>,
     step: Option<f64>,
+    show_ticks: bool,
     centred: bool,
     vertical: bool,
     name: &'a str,
@@ -1982,6 +2010,7 @@ impl<'a> Slider<'a> {
             value,
             range,
             step: None,
+            show_ticks: true,
             centred: false,
             vertical: false,
             name,
@@ -1992,6 +2021,12 @@ impl<'a> Slider<'a> {
     /// Snaps to multiples of `step` from the start, marked with ticks; arrow keys move a step.
     pub fn step(mut self, step: f64) -> Self {
         self.step = Some(step);
+        self
+    }
+
+    /// Hides or shows step marks without changing snapping or keyboard increments.
+    pub fn show_ticks(mut self, show: bool) -> Self {
+        self.show_ticks = show;
         self
     }
 
@@ -2016,7 +2051,7 @@ impl<'a> Slider<'a> {
 impl Widget for Slider<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
         // The thumb plus room for its focus ring.
-        let across = size::THUMB + 4.0;
+        let across = size::thumb() + 4.0;
         let desired = if self.vertical {
             vec2(across, ui.available_height().max(40.0))
         } else {
@@ -2025,7 +2060,7 @@ impl Widget for Slider<'_> {
         let (rect, mut response) = allocate(ui, desired, self.state, Sense::click_and_drag());
         let (lo, hi) = (*self.range.start(), *self.range.end());
         // The thumb's centre travels inside the track so it never overhangs the row.
-        let inset = size::THUMB / 2.0;
+        let inset = size::thumb() / 2.0;
         let track = if self.vertical {
             rect.shrink2(vec2(0.0, inset)).y_range()
         } else {
@@ -2112,7 +2147,7 @@ impl Widget for Slider<'_> {
         let from = if self.centred { 0.0 } else { lo };
         let (a, b) = (position_of(from), position_of(*self.value));
         let painter = ui.painter();
-        let half = size::SLIDER_TRACK / 2.0;
+        let half = size::slider_track() / 2.0;
         if self.centred {
             let line = 1.0 / ui.pixels_per_point();
             painter.rect_filled(
@@ -2132,7 +2167,9 @@ impl Widget for Slider<'_> {
             rect.x_range()
         };
         painter.rect_filled(bar(whole), half, color::border_strong());
-        if let Some(s) = self.step {
+        if self.show_ticks
+            && let Some(s) = self.step
+        {
             let line = 1.0 / ui.pixels_per_point();
             for k in 0..=((hi - lo) / s).round() as usize {
                 let x = position_of(lo + k as f64 * s);
@@ -2162,9 +2199,9 @@ impl Widget for Slider<'_> {
             let ring = Stroke::new(4.0, color::blue_soft());
             let mut past_clip = painter.clone();
             past_clip.set_clip_rect(ui.clip_rect().expand(4.0 + 1.0 / ui.pixels_per_point()));
-            past_clip.circle_stroke(thumb, size::THUMB / 2.0 + 2.0, ring);
+            past_clip.circle_stroke(thumb, size::thumb() / 2.0 + 2.0, ring);
         }
-        painter.circle_filled(thumb, size::THUMB / 2.0, ink);
+        painter.circle_filled(thumb, size::thumb() / 2.0, ink);
         response
     }
 }
@@ -2501,7 +2538,7 @@ impl Widget for CurveEditor<'_> {
 
         let l = look(&response, self.state);
         let painter = ui.painter_at(rect.expand(4.0));
-        let corner = radius::CONTROL;
+        let corner = radius::control();
         painter.rect_filled(rect, CornerRadius::same(corner), color::field());
         let grid = hairline(ui.ctx(), color::border());
         for q in [0.25, 0.5, 0.75] {
@@ -2622,9 +2659,9 @@ fn checker(ui: &Ui, swatch: Rect, corner: CornerRadius) {
 
 impl Widget for ColorField<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let width = ui.available_width().max(2.0 * size::CONTROL);
+        let width = ui.available_width().max(2.0 * size::control());
         let (rect, mut response) =
-            allocate(ui, vec2(width, size::CONTROL), self.state, Sense::click());
+            allocate(ui, vec2(width, size::control()), self.state, Sense::click());
         let text = color_text(*self.rgba);
         response.widget_info(|| {
             let shown = text
@@ -2642,8 +2679,8 @@ impl Widget for ColorField<'_> {
         let open = egui::Popup::is_id_open(ui.ctx(), popup);
         let mut l = look(&response, self.state);
         l.focus |= open;
-        let corner = CornerRadius::same(radius::CONTROL);
-        let swatch = Rect::from_min_size(rect.min, Vec2::splat(size::CONTROL));
+        let corner = CornerRadius::same(radius::control());
+        let swatch = Rect::from_min_size(rect.min, Vec2::splat(size::control()));
         let [r, g, b, a] = *self.rgba;
         if a < 255 {
             checker(ui, swatch, corner);
@@ -2655,14 +2692,15 @@ impl Widget for ColorField<'_> {
         } else {
             color::border_strong()
         };
-        ui.painter().add(border(ui, swatch, radius::CONTROL, edge));
+        ui.painter()
+            .add(border(ui, swatch, radius::control(), edge));
         let field =
             Rect::from_x_y_ranges(swatch.right() + space::S8..=rect.right(), rect.y_range());
         let frame = ui.painter().add(Shape::Noop);
-        paint_field(ui, frame, field, response.id, l, false);
+        paint_field(ui, frame, field, response.id, l, false, None);
         let (left, right) = (
-            field.left() + space::FIELD_PAD,
-            field.right() - space::FIELD_PAD,
+            field.left() + space::field_pad(),
+            field.right() - space::field_pad(),
         );
         let y = field.center().y;
         let ink = if l.disabled {
@@ -2773,7 +2811,7 @@ impl Widget for SectionHeader<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
         let (rect, mut response) = allocate(
             ui,
-            vec2(ui.available_width(), size::CONTROL),
+            vec2(ui.available_width(), size::control()),
             self.state,
             Sense::click(),
         );
@@ -2801,9 +2839,9 @@ impl Widget for SectionHeader<'_> {
             icon::CHEVRON_RIGHT
         };
         let y = rect.center().y;
-        let chevron = pos2(rect.left() + size::ICON / 2.0, y);
+        let chevron = pos2(rect.left() + size::icon() / 2.0, y);
         paint_icon(ui.painter(), chevron, glyph, ink);
-        let x = rect.left() + size::ICON + space::S4;
+        let x = rect.left() + size::icon() + space::S4;
         let room = rect.right() - self.reserve - x;
         let mut job =
             LayoutJob::simple_singleline(self.title.to_owned(), theme::panel_title(), ink);

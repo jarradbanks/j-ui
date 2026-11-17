@@ -67,7 +67,7 @@ impl<'a> EmptyState<'a> {
             .intersect(ui.clip_rect())
             .size()
             .max(vec2(0.0, 0.0));
-        let width = (viewport.x - 2.0 * space::S12).clamp(1.0, 320.0);
+        let width = (viewport.x - 2.0 * space::gap()).clamp(1.0, 320.0);
         let layout = |text: &str, font: egui::FontId, color| {
             let heading = font.family == theme::semibold();
             let leading = if heading { 1.3 } else { 1.45 };
@@ -88,16 +88,16 @@ impl<'a> EmptyState<'a> {
                 .size()
                 .x
                 .ceil()
-                + 2.0 * (space::BUTTON_PAD + 1.0)
+                + 2.0 * (space::button_pad() + 1.0)
         });
         let group_width = width;
         let height = 32.0
-            + space::S12
+            + space::gap()
             + title.size().y
-            + space::S12
+            + space::gap()
             + help.size().y
             + if self.action.is_some() {
-                space::S12 + crate::tokens::size::CONTROL
+                space::gap() + crate::tokens::size::control()
             } else {
                 0.0
             };
@@ -117,7 +117,7 @@ impl<'a> EmptyState<'a> {
             .scroll_source(source)
             .show(ui, |ui| {
                 let canvas = vec2(
-                    viewport.x.max(group_width + 2.0 * space::S12),
+                    viewport.x.max(group_width + 2.0 * space::gap()),
                     viewport.y.max(height),
                 );
                 ui.set_min_size(canvas);
@@ -137,13 +137,13 @@ impl<'a> EmptyState<'a> {
                     icon,
                     muted,
                 );
-                let mut y = content_rect.top() + 32.0 + space::S12;
+                let mut y = content_rect.top() + 32.0 + space::gap();
                 for galley in [title, help] {
                     let rect = Rect::from_min_size(
                         pos2(center - width / 2.0, y),
                         vec2(width, galley.size().y),
                     );
-                    y += galley.size().y + space::S12;
+                    y += galley.size().y + space::gap();
                     // Labels expose real, wrapped text to accessibility, unlike painter-only copy.
                     ui.put(
                         rect,
@@ -153,7 +153,7 @@ impl<'a> EmptyState<'a> {
                 let action = self.action.map(|(label, primary)| {
                     let rect = Rect::from_min_size(
                         pos2(center - action_width.min(width) / 2.0, y),
-                        vec2(action_width.min(width), crate::tokens::size::CONTROL),
+                        vec2(action_width.min(width), crate::tokens::size::control()),
                     );
                     let button = if primary {
                         Button::primary(label)

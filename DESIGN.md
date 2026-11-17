@@ -45,5 +45,8 @@ immediately.
 
 `tests/components.rs` renders the reference's component arrangement;
 `tests/soft_style.rs` checks state colors, geometry, typography and keyboard
-behavior. The gallery's Components tab exercises the reusable additions.
-See [the restyle report](docs/soft-restyle.md) for comparison evidence and commands.
+behavior. The native gallery reproduces the complete reference page, including
+its live Current/Line/Soft and Figtree/Inter choices. Scoped presentation accessors
+support those comparisons; the public constants and unscoped defaults stay Soft.
+See the [restyle report](docs/soft-restyle.md) and [gallery evidence](docs/gallery-page.md)
+for rendered comparisons and commands.

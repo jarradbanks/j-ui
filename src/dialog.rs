@@ -28,7 +28,7 @@ pub fn action_footer<'a>(
         let next = if i == start {
             size.x
         } else {
-            row_width + space::GAP + size.x
+            row_width + space::gap() + size.x
         };
         if next > width && i > start {
             rows.push((start..i, row_width));
@@ -43,7 +43,7 @@ pub fn action_footer<'a>(
     }
     let mut buttons = buttons.into_iter();
     ui.allocate_ui_with_layout(egui::vec2(width, 0.0), Layout::top_down(Align::Min), |ui| {
-        ui.spacing_mut().item_spacing = egui::Vec2::splat(space::GAP);
+        ui.spacing_mut().item_spacing = egui::Vec2::splat(space::gap());
         let mut responses = Vec::with_capacity(sizes.len());
         for (row, row_width) in rows {
             ui.allocate_ui_with_layout(
@@ -77,8 +77,8 @@ pub fn action_footer<'a>(
 /// shadow. [`modal`] uses it; use it directly for a dialog drawn in place.
 pub fn frame(style: &egui::Style) -> Frame {
     Frame::popup(style)
-        .corner_radius(radius::DIALOG)
-        .inner_margin(space::DIALOG_PAD)
+        .corner_radius(radius::dialog())
+        .inner_margin(space::dialog_pad())
 }
 
 /// The shared dialog frame: centred over the scrim, 20px corners, 24px padding and a

@@ -18,7 +18,7 @@ impl Tone {
     /// The tone's (fill, ink).
     fn colors(self) -> (Color32, Color32) {
         match self {
-            Self::Neutral => (color::selection_fill(), color::ink_2()),
+            Self::Neutral => (color::neutral_fill(), color::ink_2()),
             Self::Info => (color::blue_soft(), color::light_blue()),
             Self::Success => (color::green_soft(), color::green()),
             Self::Warning => (color::amber_soft(), color::amber()),
@@ -61,11 +61,11 @@ impl Widget for Badge<'_> {
         let (fill, ink) = self.tone.colors();
         let font = theme::small_strong();
         let width = (text_width(ui, self.label, &font) + 20.0).max(self.min_width);
-        let size = vec2(width.ceil(), size::BADGE);
+        let size = vec2(width.ceil(), size::badge());
         let (rect, response) = allocate(ui, size, State::Live, Sense::hover());
         response.widget_info(|| WidgetInfo::labeled(WidgetType::Label, true, self.label));
         ui.painter()
-            .rect_filled(rect, CornerRadius::same(radius::SMALL), fill);
+            .rect_filled(rect, CornerRadius::same(radius::small()), fill);
         paint_text(
             ui,
             rect.center(),
@@ -97,14 +97,14 @@ impl<'a> Progress<'a> {
 
 impl Widget for Progress<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let size = vec2(ui.available_width(), size::SLIDER_TRACK);
+        let size = vec2(ui.available_width(), size::slider_track());
         let (rect, response) = allocate(ui, size, State::Live, Sense::hover());
         response.widget_info(|| {
             let mut info = WidgetInfo::labeled(WidgetType::ProgressIndicator, true, self.name);
             info.value = Some(f64::from(self.fraction * 100.0).floor());
             info
         });
-        let round = size::SLIDER_TRACK / 2.0;
+        let round = size::slider_track() / 2.0;
         ui.painter()
             .rect_filled(rect, round, color::border_strong());
         let done = rect.with_max_x(rect.left() + rect.width() * self.fraction);
@@ -145,19 +145,19 @@ impl Notice<'_> {
             buttons += space::S8;
         }
         if self.dismiss.is_some() {
-            buttons += size::CONTROL + space::S8;
+            buttons += size::control() + space::S8;
         }
         let width = ui.available_width();
-        let room = width - left - right - size::ICON - space::S8 - buttons;
+        let room = width - left - right - size::icon() - space::S8 - buttons;
         let mut job = LayoutJob::simple(
             self.message.to_owned(),
             theme::body(),
             color::ink(),
             room.max(1.0),
         );
-        job.sections[0].format.line_height = Some(crate::tokens::font::BODY * 1.45);
+        job.sections[0].format.line_height = Some(crate::tokens::font::body() * 1.45);
         let message = ui.fonts_mut(|fonts| fonts.layout_job(job));
-        let height = (size::CONTROL + 2.0 * y).max(message.size().y + 2.0 * y);
+        let height = (size::control() + 2.0 * y).max(message.size().y + 2.0 * y);
         let (rect, _) = allocate(ui, vec2(width, height), State::Live, Sense::hover());
         let corner = CornerRadius::same(self.corner);
         if self.floating {
@@ -170,11 +170,11 @@ impl Notice<'_> {
                 .add(border(ui, rect, self.corner, color::border()));
         }
         let mid = rect.center().y;
-        let icon = pos2(rect.left() + left + size::ICON / 2.0, mid);
+        let icon = pos2(rect.left() + left + size::icon() / 2.0, mid);
         paint_icon(ui.painter(), icon, self.icon, self.icon_ink);
         let text = Rect::from_min_size(
             pos2(
-                icon.x + size::ICON / 2.0 + space::S8,
+                icon.x + size::icon() / 2.0 + space::S8,
                 mid - message.size().y / 2.0,
             ),
             message.size(),
@@ -183,10 +183,10 @@ impl Notice<'_> {
         place(ui, text, Label::new(message).selectable(false));
         let mut x = rect.right() - right;
         let dismissed = self.dismiss.map(|name| {
-            x -= size::CONTROL;
+            x -= size::control();
             let slot = Rect::from_min_size(
-                pos2(x, mid - size::CONTROL / 2.0),
-                Vec2::splat(size::CONTROL),
+                pos2(x, mid - size::control() / 2.0),
+                Vec2::splat(size::control()),
             );
             x -= space::S8;
             let button = Button::icon(icon::X, name).ink(self.icon_ink);
@@ -194,8 +194,8 @@ impl Notice<'_> {
         });
         let acted = action.map(|button| {
             let slot = Rect::from_min_size(
-                pos2(x - action_width, mid - size::CONTROL / 2.0),
-                vec2(action_width, size::CONTROL),
+                pos2(x - action_width, mid - size::control() / 2.0),
+                vec2(action_width, size::control()),
             );
             place(ui, slot, button)
         });
@@ -231,9 +231,9 @@ impl<'a> Banner<'a> {
         let (fill, ink) = self.tone.colors();
         let notice = Notice {
             fill,
-            corner: radius::CONTROL,
+            corner: radius::control(),
             floating: false,
-            pad: [space::INSET, space::INSET, 6.0],
+            pad: [space::inset(), space::inset(), 6.0],
             icon: icon::CIRCLE_ALERT,
             icon_ink: ink,
             message: self.message,
@@ -279,9 +279,9 @@ impl<'a> Toast<'a> {
     pub fn show(self, ui: &mut Ui) -> ToastResponse {
         let notice = Notice {
             fill: color::raised(),
-            corner: radius::PANEL,
+            corner: radius::panel(),
             floating: true,
-            pad: [space::INSET, space::S8, space::S8],
+            pad: [space::inset(), space::S8, space::S8],
             icon: icon::CIRCLE_CHECK,
             icon_ink: color::green(),
             message: self.message,

@@ -56,10 +56,10 @@ impl<'a> Table<'a> {
         rows: &[&str],
         mut cell: impl FnMut(&mut Ui, usize, usize),
     ) -> Response {
-        const HEIGHT: f32 = size::CONTROL + space::S4;
+        let height = size::control() + space::S4;
         const PAD: f32 = space::S8;
         const GAP: f32 = space::S12;
-        let size = vec2(ui.available_width(), HEIGHT * (rows.len() + 1) as f32);
+        let size = vec2(ui.available_width(), height * (rows.len() + 1) as f32);
         let (rect, mut response) = allocate(ui, size, State::Live, Sense::hover());
         let fixed: f32 = self.columns.iter().filter_map(|c| c.width).sum();
         let fills = self.columns.iter().filter(|c| c.width.is_none()).count();
@@ -77,8 +77,8 @@ impl<'a> Table<'a> {
             .collect();
         let rule = hairline(ui.ctx(), color::border());
         for row in 0..=rows.len() {
-            let top = rect.top() + HEIGHT * row as f32;
-            let line = Rect::from_min_size(pos2(rect.left(), top), vec2(rect.width(), HEIGHT));
+            let top = rect.top() + height * row as f32;
+            let line = Rect::from_min_size(pos2(rect.left(), top), vec2(rect.width(), height));
             // Below the cells, so the fill is known once the row has been hovered.
             let fill = ui.painter().add(Shape::Noop);
             if row < rows.len() {
@@ -127,7 +127,7 @@ impl<'a> Table<'a> {
                 Color32::TRANSPARENT
             };
             let target = motion::color(ui.ctx(), r.id.with("fill"), target);
-            let corner = CornerRadius::same(radius::SMALL);
+            let corner = CornerRadius::same(radius::small());
             ui.painter()
                 .set(fill, Shape::rect_filled(line, corner, target));
         }
@@ -153,15 +153,15 @@ impl Card {
     ) -> egui::InnerResponse<R> {
         // Top to bottom whatever row or grid the card sits in.
         let output = egui::Frame::new()
-            .fill(color::raised())
+            .fill(color::card_fill())
             .inner_margin(1.0)
-            .corner_radius(radius::PANEL)
+            .corner_radius(radius::panel())
             .show(ui, |ui| ui.vertical(add_contents).inner);
         ui.painter().add(border(
             ui,
             output.response.rect,
-            radius::PANEL,
-            color::surface_outline(),
+            radius::panel(),
+            color::control_outline(),
         ));
         output
     }

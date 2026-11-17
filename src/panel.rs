@@ -110,14 +110,14 @@ impl<'a> Panel<'a> {
             pos2(down(r.right()), down(r.bottom())),
         );
         let response = ui.allocate_rect(rect, Sense::hover());
-        let corner = CornerRadius::same(radius::PANEL);
+        let corner = CornerRadius::same(radius::panel());
         let painter = ui.painter().clone();
         if !self.embedded {
-            painter.rect_filled(rect, corner, color::panel());
+            painter.rect_filled(rect, corner, color::panel_fill());
             painter.rect_stroke(
                 rect,
                 corner,
-                hairline(ui.ctx(), color::surface_outline()),
+                hairline(ui.ctx(), color::panel_outline()),
                 StrokeKind::Inside,
             );
         }
@@ -125,20 +125,27 @@ impl<'a> Panel<'a> {
         let height = if matches!(self.header, Header::None) {
             0.0
         } else {
-            size::HEADER
+            size::panel_header()
         };
         let inside = rect.shrink(1.0);
         let header = Rect::from_min_size(inside.min, vec2(inside.width(), height));
 
+        if theme::component_style() == theme::ComponentStyle::Current {
+            painter.hline(
+                header.x_range(),
+                header.bottom() - 0.5,
+                hairline(ui.ctx(), color::border()),
+            );
+        }
         let mut action = None;
-        let mut right = header.right() - space::INSET;
+        let mut right = header.right() - space::panel_inset();
         for (i, (glyph, name)) in self.actions.iter().enumerate().rev() {
             let r = Rect::from_min_size(
                 pos2(
-                    right - size::CONTROL,
-                    header.center().y - size::CONTROL / 2.0,
+                    right - size::control(),
+                    header.center().y - size::control() / 2.0,
                 ),
-                Vec2::splat(size::CONTROL),
+                Vec2::splat(size::control()),
             );
             let on = self.on.get(i).copied().unwrap_or(false);
             let b = ui.put(r, Button::icon(glyph, name).on(on));
@@ -151,7 +158,7 @@ impl<'a> Panel<'a> {
         match self.header {
             Header::None | Header::Toolbar => {}
             Header::Title(title) => {
-                let left = header.left() + space::INSET;
+                let left = header.left() + space::panel_inset();
                 let galley = fit_text(ui, title, theme::panel_title(), color::ink(), right - left);
                 let pos = text_pos(&galley, left, header.center().y);
                 paint_fit(ui, pos, galley, color::ink());
@@ -162,14 +169,15 @@ impl<'a> Panel<'a> {
                 } else {
                     size::TAB_MAX
                 };
-                let ends = (header.left() + space::INSET, right);
+                let ends = (header.left() + space::panel_inset(), right);
                 tab_strip(ui, ends, header, labels, active, max);
             }
         }
 
         let body = Rect::from_x_y_ranges(
-            inside.left() + space::INSET..=inside.right() - space::INSET,
-            header.bottom() + space::INSET..=inside.bottom() - space::INSET,
+            inside.left() + space::panel_inset()..=inside.right() - space::panel_inset(),
+            header.bottom() + space::panel_inset().max(12.0)
+                ..=inside.bottom() - space::panel_inset(),
         );
         let mut child = ui.new_child(UiBuilder::new().max_rect(body));
         child.set_clip_rect(body.intersect(ui.clip_rect()));

@@ -43,12 +43,10 @@ Reusable additions across the complete branch are `Autocomplete`, `Card`, `Colum
 `NavRow` and `RadioGroup`. This finishing commit also adds `theme::text`,
 `Toggle::show_label` and the semantic selection-fill helper.
 
-The gallery's Components tab exercises the additions, including opening and
-dismissing a toast. The Widgets matrix splits its columns into vertical groups
-when the available width is too narrow. Disabled and Loading / Error stay
-reachable through vertical scrolling. The Inspector reserves its measured
-content height, keeping the entire +1s button inside its body. All new gallery text uses the existing localization catalog;
-all 19 gallery locales include the new keys and corrected type-scale labels.
+The native gallery now reproduces the reference page itself: its 17 sections,
+sticky rail and toolbar, responsive grids, sample content and live style/font/theme
+choices. See [the gallery implementation and evidence](gallery-page.md) for the
+window captures, full-page comparisons and localization details.
 
 ## Render comparison
 
@@ -62,10 +60,10 @@ arrangement and content as the reference at 1280 points wide.
 | --- | --- | --- |
 | Dark components | [1280px HTML](screenshots/soft-restyle/prototype-dark-1280.png) | [100%](../tests/snapshots/components_dark.png), [150%](../tests/snapshots/components_dark_1.5x.png) |
 | Light components | [1280px HTML](screenshots/soft-restyle/prototype-light-1280.png) | [100%](../tests/snapshots/components_light.png), [150%](../tests/snapshots/components_light_1.5x.png) |
-| Wide reference | [Dark 1920px](screenshots/soft-restyle/prototype-dark-1920.png), [Light 1920px](screenshots/soft-restyle/prototype-light-1920.png) | [Interactive gallery, 1920 at 150%](../tests/snapshots/gallery_components_1920_1.5x.png) |
+| Wide reference | [Dark 1920px](screenshots/soft-restyle/prototype-dark-1920.png), [Light 1920px](screenshots/soft-restyle/prototype-light-1920.png) | [Native page, 1920 at 150%](../tests/snapshots/gallery_dark_1920_1.5x.png) |
 | High Contrast | Not specified by HTML | [Components](../tests/snapshots/components_high-contrast.png), [states at 150%](../tests/snapshots/soft_states_high-contrast_1.5x.png) |
 | Default, hover, focus, pressed, disabled | CSS rules in reference | [Dark](../tests/snapshots/soft_states_dark_1x.png), [Light](../tests/snapshots/soft_states_light_1x.png) |
-| Live gallery | Reusable components composed in the existing gallery | [1280 at 100%](../tests/snapshots/gallery_components_1280_1x.png), [1280 at 150%](../tests/snapshots/gallery_components_1280_1.5x.png) |
+| Live gallery | [Side-by-side window captures](gallery-page.md) | [1280 at 100%](../tests/snapshots/gallery_dark_1280_1x.png), [1280 at 150%](../tests/snapshots/gallery_dark_1280_1.5x.png) |
 
 Compared the full pages and full-resolution crops of the cards, controls and
 feedback sections. Button widths, control heights, row centers, repeated edges,
@@ -105,10 +103,6 @@ pixel-identical Chromium rendering:
   and control outlines and uses an accessible middle-tone selection fill.
   Disabled states not specified in the HTML retain the library's semantic
   disabled treatment.
-- The reference's Current/Line choices, font-picker demo and Token Map are
-  reference-page composition. This change implements the default Soft library
-  profile; it does not add alternative density profiles or a token-map widget.
-  The native fixture omits the Token Map appendix.
 
 ## Independent validation corrections
 
@@ -119,15 +113,14 @@ in the shared implementation:
 | Finding | Correction and proof |
 | --- | --- |
 | Painted labels sat low | `text_pos`, `paint_left` and `paint_text` center visible glyph ink. Buttons, segments, pills, checkbox/radio/toggle labels, dropdown/menu values, panel titles, tabs, navigation and badges use the shared path. The 15-label geometry/pixel check passes at 1280×800 and 1920×1080 at 100% and 150%; toast/banner action ink is within 1 point of its message. |
-| Inspector and matrix clipping | Explicit Inspector spacing and measured height keep +1s fully visible and clickable. Responsive matrix groups keep all states reachable. GPU tests assert the button lies inside its paint clip and the Disabled and Loading / Error columns contain no horizontally clipped text at both widths/scales. |
 | High Contrast separation | A semantic outline restores panel/card/control edges. Selected fills use `#626262`: at least 3:1 against Panel and Raised, and 4.5:1 for text. Pixel checks cover panel boundaries, hovered button outlines and selected button/segment/menu/rail fills at both scales. |
 | Segment width | Round each segment's natural width instead of rounding up. Grid/List/Detail measures 179 points at 100% (within one point at 150%). |
 | Missing transitions | Shared 120ms CSS-ease color interpolation covers fields and focus rings, segments/pills, tabs, rail/menu/table rows, checkboxes/radio/toggles and buttons. Tests render intermediate and settled colors, exercise reversal and reduced motion, and confirm the CSS easing midpoint. |
 
 [The new polish tests](../tests/soft_fixes.rs) measure painted ink and rendered
-colors rather than relying only on accessible control rectangles. Gallery proof:
-[1280 state groups](../tests/snapshots/gallery_states_1280_1x.png),
-[1920 state matrix](../tests/snapshots/gallery_states_1920_1x.png).
+colors rather than relying only on accessible control rectangles. The running
+page has its own [gallery geometry and interaction checks](../tests/gallery.rs)
+and [rendered evidence](gallery-page.md).
 
 ## Verification
 
@@ -152,7 +145,7 @@ git diff --check
 ```
 
 Formatting, build, strict Clippy, the style checker and all 157 tests passed;
-0 tests failed or were ignored. GPU tests were required, snapshots were refreshed
+0 tests failed or were ignored in that component pass. GPU tests were required, snapshots were refreshed
 and the final run compared them without update mode. Native and HTML polish
 checks passed. Final command output is recorded in
 [verification.txt](screenshots/soft-restyle/verification.txt).
@@ -162,3 +155,5 @@ v0.2.0, jclip revision `9610442`, jmix v0.3.0 and jvec-desktop v0.4.0. Consumer
 repositories and pins were not changed or built. Version/release work, a compact
 jvid profile, pushing and opening a PR are outside this task. Independent
 validation remains with the coordinator.
+
+The subsequent gallery-page verification is recorded in [gallery-page.md](gallery-page.md).
