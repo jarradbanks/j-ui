@@ -45,11 +45,17 @@ j-update = { path = "crates/j-update" }
 serde.workspace = true
 sys-locale = "0.3.2"
 toml.workspace = true
+# Development-only gallery hooks; see examples/gallery.rs.
+j-ui-debug = { path = "crates/j-ui-debug", optional = true }
+subsecond = { version = "0.7", optional = true }
+dioxus-devtools = { version = "0.7", optional = true }
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.62", features = ["Win32_UI_WindowsAndMessaging", "Win32_Graphics_Gdi"] }
 
 [features]
+debug-ui = ["dep:j-ui-debug"]
+hot-reload = ["dep:subsecond", "dep:dioxus-devtools"]
 # Headless GPU setup for egui_kittest tests; dev-dependency use only.
 test-support = []
 

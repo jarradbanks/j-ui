@@ -4,14 +4,13 @@ use egui::{Rect, Shape, UiBuilder, pos2, vec2};
 use egui_kittest::{Harness, SnapshotResults};
 use j_ui::{
     test_support,
-    theme::icon,
     tokens::color,
-    widgets::{Button, State, TextInput},
+    widgets::{State, TextInput},
 };
 
 const SCALES: [f32; 3] = [1.0, 1.25, 1.5];
 const VIEWPORTS: [[f32; 2]; 2] = [[1280.0, 720.0], [1920.0, 1080.0]];
-const HEIGHTS: [f32; 4] = [24.0, 32.0, 36.0, 48.0];
+const HEIGHTS: [f32; 4] = [36.0, 40.0, 48.0, 56.0];
 
 fn texts(shape: &Shape, out: &mut Vec<Rect>) {
     match shape {
@@ -62,12 +61,9 @@ fn focus_ring_is_complete_at_all_clipped_container_edges() {
                         if clipped {
                             ui.set_clip_rect(rect);
                         }
-                        ui.add(
-                            Button::icon(icon::SLIDERS, "Filters")
-                                .width(36.0)
-                                .height(36.0)
-                                .state(State::Focus),
-                        );
+                        // Buttons show no ring; a field does, outside its own bounds.
+                        let mut text = String::new();
+                        ui.add(TextInput::new(&mut text).width(36.0).state(State::Focus));
                     });
                 }
             });
@@ -78,7 +74,10 @@ fn focus_ring_is_complete_at_all_clipped_container_edges() {
         let mut missing = 0;
         for y in (20.0 * ppp) as u32..(64.0 * ppp) as u32 {
             for x in (20.0 * ppp) as u32..(64.0 * ppp) as u32 {
-                if image.get_pixel(x, y) != image.get_pixel(x + (96.0 * ppp) as u32, y) {
+                let a = image.get_pixel(x, y);
+                let b = image.get_pixel(x + (96.0 * ppp) as u32, y);
+                // Fractional-DPI tessellation can differ by one channel level after translation.
+                if a.0.iter().zip(b.0).any(|(a, b)| a.abs_diff(b) > 1) {
                     missing += 1;
                 }
             }
@@ -194,7 +193,7 @@ fn single_line_placeholder_and_value_are_centred_and_padded() {
     snapshots.unwrap();
     assert!(failures.is_empty(), "{}", failures.join("\n"));
     println!(
-        "PASSED inputs: placeholder/value, heights 24/32/36/48, 1280x720/1920x1080, DPI 1.0/1.25/1.5, <=1 physical pixel"
+        "PASSED inputs: placeholder/value, heights 36/40/48/56, 1280x720/1920x1080, DPI 1.0/1.25/1.5, <=1 physical pixel"
     );
 }
 
@@ -252,7 +251,7 @@ fn multiline_keeps_scrolling_content_inside_padding() {
         let row = h
             .ctx
             .fonts_mut(|fonts| fonts.row_height(&j_ui::theme::body()));
-        let bottom = 48.0 + 2.0 * row;
+        let bottom = 24.0 + j_ui::tokens::size::CONTROL + 2.0 * row;
         let mut overflow = 0;
         for y in ((bottom - 4.0) * ppp).ceil() as u32..((bottom + 40.0) * ppp) as u32 {
             for x in (312.0 * ppp) as u32..(536.0 * ppp) as u32 {

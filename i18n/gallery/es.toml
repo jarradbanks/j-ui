@@ -9,6 +9,7 @@ disabled = "Desactivado"
 loading_error = "Cargando / Error"
 
 [panel]
+components = "Componentes"
 widgets = "Controles"
 effects = "Efectos"
 text = "Texto"
@@ -21,7 +22,7 @@ audio = "Audio"
 markers = "Marcadores"
 history = "Historial"
 captions = "Subtítulos"
-overflow = "Las pestañas de menos de 64 px pasan al menú desplegable."
+overflow = "Las pestañas que no caben pasan al menú del chevrón."
 type_and_colour = "Tipografía y color"
 
 [row]
@@ -48,6 +49,8 @@ slider = "Deslizador"
 keyframe = "Fotograma clave"
 
 [demo]
+no_matches = "No hay coincidencias"
+dismiss = "Cerrar"
 delete = "Eliminar"
 export = "Exportar"
 width_prefix = "An"
@@ -71,12 +74,12 @@ ochre = "Ocre"
 green = "Verde"
 
 [type]
-display = "Portada 22"
-headline = "Titular 16"
-title = "Título 14"
-body_strong = "Cuerpo fuerte 12"
-body = "Cuerpo 12 · 0123456789 no se mueve"
-small = "Pequeño 10 · pista de atajo"
+display = "Portada 28"
+headline = "Titular 20"
+title = "Título 16"
+body_strong = "Cuerpo fuerte 14"
+body = "Cuerpo 14, 0123456789 no se mueve"
+small = "Pequeño 12, pista de atajo"
 
 [clip]
 video = "Vídeo"

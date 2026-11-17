@@ -90,3 +90,46 @@ fn entrance_starts_after_idle_and_finishes_in_the_shared_duration() {
     output.textures_delta.clear();
     assert_eq!(opacity, 1.0);
 }
+
+#[test]
+fn colors_follow_css_ease_and_reverse_without_jumping() {
+    let ctx = Context::default();
+    set_enabled(&ctx, true);
+    let sample = |time, target| {
+        let mut current = Color32::TRANSPARENT;
+        let mut output = ctx.run_ui(
+            egui::RawInput {
+                time: Some(time),
+                ..Default::default()
+            },
+            |ui| {
+                current = color(ui.ctx(), Id::new("color"), target);
+            },
+        );
+        output.textures_delta.clear();
+        current
+    };
+    assert_eq!(sample(0.0, Color32::BLACK), Color32::BLACK);
+    assert_eq!(sample(1.0, Color32::WHITE), Color32::BLACK);
+    let middle = sample(1.06, Color32::WHITE);
+    assert!(
+        (i32::from(middle.r()) - 205).abs() <= 1,
+        "CSS ease at 50%: {middle:?}"
+    );
+    assert_eq!(
+        sample(1.06, Color32::BLACK),
+        middle,
+        "reverse from current color"
+    );
+    assert!(sample(1.12, Color32::BLACK).r() < middle.r());
+    assert_eq!(sample(1.18, Color32::BLACK), Color32::BLACK);
+    sample(2.0, Color32::WHITE);
+    set_enabled(&ctx, false);
+    assert_eq!(sample(2.01, Color32::WHITE), Color32::WHITE);
+    set_enabled(&ctx, true);
+    assert_eq!(
+        sample(3.0, Color32::BLACK),
+        Color32::BLACK,
+        "reduced motion clears old transitions"
+    );
+}

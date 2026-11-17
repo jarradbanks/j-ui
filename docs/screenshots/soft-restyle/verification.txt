@@ -1,0 +1,130 @@
+Soft restyle validation fixes — 2026-11-17
+
+Base reviewed by independent validator: 7adb63f
+Host: WSL Ubuntu 22.04, lavapipe Vulkan
+VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json
+WGPU_BACKEND=vulkan
+JVID_GPU_TESTS=required
+
+PASS cargo fmt --all --check
+PASS cargo build --workspace
+PASS cargo clippy --workspace --all-targets -- -D warnings
+PASS snapshot refresh with UPDATE_SNAPSHOTS=1
+PASS cargo test --workspace --no-fail-fast -- --test-threads=1
+157 passed; 0 failed; 0 ignored; 22 suites including doc tests
+
+PASS code-cleanup style-check.py: 0 failures, 0 reviews
+PASS git diff --check
+
+Native polish output:
+test control_colors_animate_between_states_and_settle_in_120ms ... PASSED transitions: field, segmented control, menu, navigation row, checkbox, toggle, table and tabs paint intermediate colors and settle after 120ms
+test high_contrast_surfaces_and_selected_controls_remain_distinct ... PASSED High Contrast: panel and hover outlines >=3:1; selected fills >=3:1 against Panel/Raised; label contrast >=4.5:1; 100%/150%
+test painted_labels_and_notice_actions_center_their_ink ... PASSED ink centering: 15 labels, geometry <=0.5px, raster <=1px; notice/action rows <=1pt; segment width 179 +/-1pt; 1280x800/1920x1080 at 100%/150%
+PASS gallery_disabled_and_loading_columns_are_reachable_without_sideways_clipping
+PASS component_gallery_is_interactive_at_both_window_sizes_and_scales
+PASS colors_follow_css_ease_and_reverse_without_jumping
+
+Rendered coverage:
+- Reference components: Dark, Light, High Contrast at 100% and 150%
+- State matrix: 15 controls x 5 states x 3 themes x 2 scales
+- Interactive gallery and Inspector: 1280x800 and 1920x1080 at 100% and 150%
+- All gallery state columns: 1280x860 and 1920x1080 at 100% and 150%
+- Ink centering: 15 labels at 1280x800 and 1920x1080 at 100% and 150%
+- Input geometry/focus: 100%, 125%, 150%
+- Reference: Chromium Dark/Light at 1280/1920 CSS pixels, reducedMotion=reduce
+
+Polish HTML command:
+node /mnt/c/Users/Jarrad/.agents/skills/polish/polish-check.js --url file:///home/jarrad/orca/workspaces/j-ui/soft-restyle-finish/prototype/component-styles/index.html --widths 1280,1920 --height 900
+
+polish-check file:///home/jarrad/orca/workspaces/j-ui/soft-restyle-finish/prototype/component-styles/index.html
+
+== 1280px
+PASS   Text and icons sit on the vertical centre of their chip or button
+PASS   Chips and icons share a centre line with the text beside them
+PASS   The same element keeps one edge in every repeated row
+PASS   Chips of one kind in a column share one width
+PASS   Blocks on one row share one height
+PASS   Repeated blocks share one padding
+PASS   No chip or button is cut off
+PASS   No chip or button label wraps
+PASS   Nothing scrolls sideways
+PASS   Sticky headers stay on top
+PASS   Empty states are centred
+PASS   Titles, tabs, chips and statuses are in Title Case
+REVIEW Copy rules: no '·', no doubled dashes, no placeholders (5)
+         button "Snap to Grid Ctrl+G": button label is 4 words
+         button "Interview Cut Ready 1.24 GB": button label is 5 words
+         button "B-Roll Harbour Synced 812 MB": button label is 5 words
+         button "Voiceover Take 3 Offline 46 MB": button label is 6 words
+         button "Title Card Draft 3 MB": button label is 5 words
+PASS   Text cut with an ellipsis (review)
+
+== 1920px
+PASS   Text and icons sit on the vertical centre of their chip or button
+PASS   Chips and icons share a centre line with the text beside them
+PASS   The same element keeps one edge in every repeated row
+PASS   Chips of one kind in a column share one width
+PASS   Blocks on one row share one height
+PASS   Repeated blocks share one padding
+PASS   No chip or button is cut off
+PASS   No chip or button label wraps
+PASS   Nothing scrolls sideways
+PASS   Sticky headers stay on top
+PASS   Empty states are centred
+PASS   Titles, tabs, chips and statuses are in Title Case
+REVIEW Copy rules: no '·', no doubled dashes, no placeholders (5)
+         button "Snap to Grid Ctrl+G": button label is 4 words
+         button "Interview Cut Ready 1.24 GB": button label is 5 words
+         button "B-Roll Harbour Synced 812 MB": button label is 5 words
+         button "Voiceover Take 3 Offline 46 MB": button label is 6 words
+         button "Title Card Draft 3 MB": button label is 5 words
+PASS   Text cut with an ellipsis (review)
+
+PASSED
+
+
+Final workspace test summaries:
+     Running unittests src/lib.rs (target/debug/deps/j_ui-8783c00a748468f7)
+test result: ok. 28 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/components.rs (target/debug/deps/components-e94bcfe656554b90)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.53s
+     Running tests/dialog.rs (target/debug/deps/dialog-b5b85af2f461e81b)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests/empty_state.rs (target/debug/deps/empty_state-b1a94f170ecbe3fb)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/gallery.rs (target/debug/deps/gallery-cbf9543ba84a49d8)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.15s
+     Running tests/i18n.rs (target/debug/deps/i18n-6cc0efaa9dd9bf59)
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s
+     Running tests/i18n_guard.rs (target/debug/deps/i18n_guard-f28241a08eb1e778)
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+     Running tests/input_font_metrics.rs (target/debug/deps/input_font_metrics-9124b8ba2633b666)
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.41s
+     Running tests/input_layout.rs (target/debug/deps/input_layout-5356f7a86a506c3c)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.81s
+     Running tests/layout.rs (target/debug/deps/layout-4bba654ed0440bb5)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.26s
+     Running tests/selection.rs (target/debug/deps/selection-02f43357a181c174)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/soft_fixes.rs (target/debug/deps/soft_fixes-b9adcdcf4e4c2443)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.49s
+     Running tests/soft_style.rs (target/debug/deps/soft_style-a56420807614be5a)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.59s
+     Running tests/update.rs (target/debug/deps/update-58f316b7d3b3ea3c)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.28s
+     Running tests/widgets.rs (target/debug/deps/widgets-695a1da6bde1a28f)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+     Running unittests src/lib.rs (target/debug/deps/j_ui_debug-d5a27b8746f1acce)
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.99s
+     Running unittests src/lib.rs (target/debug/deps/j_update-68a6dce82fc225a6)
+test result: ok. 43 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+     Running unittests src/bin/j-update-tool.rs (target/debug/deps/j_update_tool-46df8a3537972378)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/generator.rs (target/debug/deps/generator-d1fbd14beb9d65c9)
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+   Doc-tests j_ui
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+   Doc-tests j_ui_debug
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+   Doc-tests j_update
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

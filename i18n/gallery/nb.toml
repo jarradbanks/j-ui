@@ -9,6 +9,7 @@ disabled = "Deaktivert"
 loading_error = "Laster / Feil"
 
 [panel]
+components = "Komponenter"
 widgets = "Kontroller"
 effects = "Effekter"
 text = "Tekst"
@@ -21,7 +22,7 @@ audio = "Lyd"
 markers = "Markører"
 history = "Historikk"
 captions = "Bildetekster"
-overflow = "Faner smalere enn 64 px flyttes til vinkelmenyen."
+overflow = "Faner uten plass vises i pilmenyen."
 type_and_colour = "Skrift og farge"
 
 [row]
@@ -48,6 +49,8 @@ slider = "Glidebryter"
 keyframe = "Nøkkelbilde"
 
 [demo]
+no_matches = "Ingen samsvarende elementer"
+dismiss = "Lukk"
 delete = "Slett"
 export = "Eksporter"
 width_prefix = "B"
@@ -71,12 +74,12 @@ ochre = "Oker"
 green = "Grønn"
 
 [type]
-display = "Display 22"
-headline = "Overskrift 16"
-title = "Tittel 14"
-body_strong = "Brødtekst halvfet 12"
-body = "Brødtekst 12 · 0123456789 står stille"
-small = "Liten 10 · hurtigtasthint"
+display = "Display 28"
+headline = "Overskrift 20"
+title = "Tittel 16"
+body_strong = "Brødtekst halvfet 14"
+body = "Brødtekst 14, 0123456789 står stille"
+small = "Liten 12, hurtigtasthint"
 
 [clip]
 video = "Video"

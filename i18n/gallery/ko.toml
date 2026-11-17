@@ -9,6 +9,7 @@ disabled = "비활성화"
 loading_error = "로드 중 / 오류"
 
 [panel]
+components = "구성 요소"
 widgets = "위젯"
 effects = "효과"
 text = "텍스트"
@@ -21,7 +22,7 @@ audio = "오디오"
 markers = "마커"
 history = "작업 내역"
 captions = "캡션"
-overflow = "64px보다 좁은 탭은 갈매기형 메뉴로 이동합니다."
+overflow = "공간이 부족한 탭은 화살표 메뉴에 표시됩니다."
 type_and_colour = "글자와 색상"
 
 [row]
@@ -48,6 +49,8 @@ slider = "슬라이더"
 keyframe = "키프레임"
 
 [demo]
+no_matches = "일치하는 항목이 없습니다"
+dismiss = "닫기"
 delete = "삭제"
 export = "내보내기"
 width_prefix = "너비"
@@ -71,12 +74,12 @@ ochre = "황토색"
 green = "초록"
 
 [type]
-display = "디스플레이 22"
-headline = "헤드라인 16"
-title = "제목 14"
-body_strong = "본문 굵게 12"
-body = "본문 12 · 0123456789 흔들림 없음"
-small = "작게 10 · 단축키 힌트"
+display = "디스플레이 28"
+headline = "헤드라인 20"
+title = "제목 16"
+body_strong = "본문 굵게 14"
+body = "본문 14, 0123456789 흔들림 없음"
+small = "작게 12, 단축키 힌트"
 
 [clip]
 video = "비디오"

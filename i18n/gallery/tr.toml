@@ -9,6 +9,7 @@ disabled = "Devre Dışı"
 loading_error = "Yükleniyor / Hata"
 
 [panel]
+components = "Bileşenler"
 widgets = "Bileşenler"
 effects = "Efektler"
 text = "Metin"
@@ -21,7 +22,7 @@ audio = "Ses"
 markers = "İşaretçiler"
 history = "Geçmiş"
 captions = "Altyazılar"
-overflow = "64 pikselden dar sekmeler köşeli ok menüsüne taşınır."
+overflow = "Sığmayan sekmeler ok menüsüne taşınır."
 type_and_colour = "Yazı ve Renk"
 
 [row]
@@ -48,6 +49,8 @@ slider = "Kaydırıcı"
 keyframe = "Anahtar Kare"
 
 [demo]
+no_matches = "Eşleşen öğe yok"
+dismiss = "Kapat"
 delete = "Sil"
 export = "Dışa Aktar"
 width_prefix = "G"
@@ -71,12 +74,12 @@ ochre = "Aşı Boyası"
 green = "Yeşil"
 
 [type]
-display = "Vitrin 22"
-headline = "Manşet 16"
-title = "Başlık 14"
-body_strong = "Kalın gövde 12"
-body = "Gövde 12 · 0123456789 yerinde durur"
-small = "Küçük 10 · kısayol ipucu"
+display = "Vitrin 28"
+headline = "Manşet 20"
+title = "Başlık 16"
+body_strong = "Kalın gövde 14"
+body = "Gövde 14, 0123456789 yerinde durur"
+small = "Küçük 12, kısayol ipucu"
 
 [clip]
 video = "Video"

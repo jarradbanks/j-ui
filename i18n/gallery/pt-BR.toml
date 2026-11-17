@@ -9,6 +9,7 @@ disabled = "Desativado"
 loading_error = "Carregando / Erro"
 
 [panel]
+components = "Componentes"
 widgets = "Widgets"
 effects = "Efeitos"
 text = "Texto"
@@ -21,7 +22,7 @@ audio = "Áudio"
 markers = "Marcadores"
 history = "Histórico"
 captions = "Legendas"
-overflow = "Abas com menos de 64px vão para o menu da seta."
+overflow = "As abas que não cabem vão para o menu de seta."
 type_and_colour = "Tipografia e cor"
 
 [row]
@@ -48,6 +49,8 @@ slider = "Controle deslizante"
 keyframe = "Quadro-chave"
 
 [demo]
+no_matches = "Nenhum item correspondente"
+dismiss = "Fechar"
 delete = "Excluir"
 export = "Exportar"
 width_prefix = "L"
@@ -71,12 +74,12 @@ ochre = "Ocre"
 green = "Verde"
 
 [type]
-display = "Display 22"
-headline = "Manchete 16"
-title = "Título 14"
-body_strong = "Corpo forte 12"
-body = "Corpo 12 · 0123456789 fica parado"
-small = "Pequeno 10 · dica de atalho"
+display = "Display 28"
+headline = "Manchete 20"
+title = "Título 16"
+body_strong = "Corpo forte 14"
+body = "Corpo 14, 0123456789 fica parado"
+small = "Pequeno 12, dica de atalho"
 
 [clip]
 video = "Vídeo"

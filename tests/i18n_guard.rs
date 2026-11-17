@@ -157,6 +157,18 @@ const SINK_CALLS: &[&str] = &[
     "Dropdown::new",
     "Segmented::new",
     "MenuRow::new",
+    "MenuRow::option",
+    "Autocomplete::new",
+    "Badge::new",
+    "Banner::new",
+    "Toast::new",
+    "Progress::new",
+    "Column::fill",
+    "Column::fixed",
+    "Tabs::new",
+    "NavRow::new",
+    "RadioGroup::new",
+    "theme::text",
     "SelectableLabel::new",
     "Hyperlink::from_label_and_url",
     "WidgetText::from",
@@ -199,7 +211,14 @@ fn workspace() -> PathBuf {
 fn leak_catalog(dir: &str) -> &'static Catalog {
     let read = |l: &str| -> &'static str {
         let path = workspace().join(dir).join(format!("{l}.toml"));
-        let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path:?}: {e}"));
+        let mut text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path:?}: {e}"));
+        // The gallery macro reads its old labels and the new page catalog.
+        if dir == "i18n/gallery" && matches!(l, "en" | "es") {
+            let page = workspace().join(dir).join("page").join(format!("{l}.toml"));
+            text.push_str(
+                &std::fs::read_to_string(&page).unwrap_or_else(|e| panic!("{page:?}: {e}")),
+            );
+        }
         Box::leak(text.into_boxed_str())
     };
     Box::leak(Box::new(Catalog::new(LANGUAGES.map(read))))

@@ -235,6 +235,18 @@ async function check() {
                     assert.equal(target.hit, target.id);
                 }
             }
+            for (const [nativeRole, browserRole] of [
+                ["EditableComboBox", "combobox"],
+                ["ListBox", "listbox"],
+                ["ListBoxOption", "option"],
+                ["Button", "button"],
+            ]) {
+                targets[1].role = nativeRole;
+                generation += 1;
+                await view
+                    .locator(`[data-native-id="apply"][role="${browserRole}"]`)
+                    .waitFor();
+            }
             await view.locator("#keyboard").focus();
             inputs.length = 0;
             await view.keyboard.press("Space");

@@ -9,6 +9,7 @@ disabled = "Uitgeschakeld"
 loading_error = "Laden / fout"
 
 [panel]
+components = "Componenten"
 widgets = "Bedieningselementen"
 effects = "Effecten"
 text = "Tekst"
@@ -21,7 +22,7 @@ audio = "Audio"
 markers = "Markeringen"
 history = "Geschiedenis"
 captions = "Bijschriften"
-overflow = "Tabbladen smaller dan 64 px gaan naar het pijltjesmenu."
+overflow = "Tabbladen die niet passen staan in het pijltjesmenu."
 type_and_colour = "Typografie en kleur"
 
 [row]
@@ -48,6 +49,8 @@ slider = "Schuifregelaar"
 keyframe = "Keyframe"
 
 [demo]
+no_matches = "Geen overeenkomende items"
+dismiss = "Sluiten"
 delete = "Verwijderen"
 export = "Exporteren"
 width_prefix = "B"
@@ -71,12 +74,12 @@ ochre = "Oker"
 green = "Groen"
 
 [type]
-display = "Display 22"
-headline = "Kop 16"
-title = "Titel 14"
-body_strong = "Tekst vet 12"
-body = "Tekst 12 · 0123456789 staat stil"
-small = "Klein 10 · sneltoetshint"
+display = "Display 28"
+headline = "Kop 20"
+title = "Titel 16"
+body_strong = "Tekst vet 14"
+body = "Tekst 14, 0123456789 staat stil"
+small = "Klein 12, sneltoetshint"
 
 [clip]
 video = "Video"

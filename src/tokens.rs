@@ -1,4 +1,4 @@
-//! Design tokens from [jvid's design specification](https://github.com/jarradbanks/jvid/blob/main/DESIGN.md) ("The Quiet Frame"). Sizes are egui points.
+//! Soft component tokens. Sizes are egui points; the profile is documented in `DESIGN.md`.
 
 use egui::Color32;
 
@@ -24,6 +24,104 @@ pub mod color {
 
     pub const VIEWER: Color32 = hex(0x040404);
     pub const WHITE: Color32 = Color32::WHITE;
+
+    /// Soft control and selection fill, with readable text in high-contrast palettes.
+    pub fn selection_fill() -> Color32 {
+        let palette = crate::themes::current();
+        if crate::theme::component_style() == crate::theme::ComponentStyle::Line
+            && super::contrast(palette.panel, Color32::BLACK) > 10.0
+        {
+            return palette.raised;
+        }
+        palette.selection_fill()
+    }
+
+    /// Border-toned surfaces, with an accessible fill in High Contrast.
+    pub fn neutral_fill() -> Color32 {
+        crate::themes::current().selection_fill()
+    }
+
+    /// Separates surfaces and controls when the palette needs contrast outlines.
+    pub fn surface_outline() -> Color32 {
+        if crate::themes::current().selection_fill() != border() {
+            return border();
+        }
+        Color32::TRANSPARENT
+    }
+
+    /// Recessed field fill for the current presentation.
+    pub fn field_fill() -> Color32 {
+        if crate::theme::component_style() == crate::theme::ComponentStyle::Soft {
+            ground()
+        } else {
+            field()
+        }
+    }
+
+    /// Resting secondary button fill.
+    pub fn button_fill() -> Color32 {
+        if crate::theme::component_style() == crate::theme::ComponentStyle::Soft {
+            selection_fill()
+        } else {
+            raised()
+        }
+    }
+
+    /// Control edge; Soft relies on tone steps except in High Contrast.
+    pub fn control_outline() -> Color32 {
+        if crate::theme::component_style() == crate::theme::ComponentStyle::Soft {
+            surface_outline()
+        } else {
+            border()
+        }
+    }
+
+    /// Panel surface fill; Line leaves the document surface visible.
+    pub fn panel_fill() -> Color32 {
+        if crate::theme::component_style() == crate::theme::ComponentStyle::Line {
+            Color32::TRANSPARENT
+        } else {
+            panel()
+        }
+    }
+
+    /// Panel edge; Current and High Contrast retain a visible stroke.
+    pub fn panel_outline() -> Color32 {
+        if crate::theme::component_style() == crate::theme::ComponentStyle::Current {
+            border()
+        } else {
+            surface_outline()
+        }
+    }
+
+    /// Card surface fill in the active presentation.
+    pub fn card_fill() -> Color32 {
+        if crate::theme::component_style() == crate::theme::ComponentStyle::Line {
+            panel()
+        } else {
+            raised()
+        }
+    }
+
+    /// Background behind the segmented choices.
+    pub fn segment_track() -> Color32 {
+        match crate::theme::component_style() {
+            crate::theme::ComponentStyle::Current => field(),
+            crate::theme::ComponentStyle::Line => Color32::TRANSPARENT,
+            crate::theme::ComponentStyle::Soft => ground(),
+        }
+    }
+
+    /// Selected segment fill in the active presentation.
+    pub fn segment_fill() -> Color32 {
+        if crate::theme::component_style() == crate::theme::ComponentStyle::Current
+            || surface_outline() != Color32::TRANSPARENT
+        {
+            selection_fill()
+        } else {
+            raised()
+        }
+    }
 
     macro_rules! themed {
         ($($name:ident),*) => {$(
@@ -64,45 +162,281 @@ pub mod space {
     pub const S16: f32 = 16.0;
     pub const S24: f32 = 24.0;
     pub const S32: f32 = 32.0;
-    /// Left and right padding inside a panel and its header.
-    pub const INSET: f32 = S12;
+    /// Padding inside a panel and its header.
+    pub const INSET: f32 = S16;
     /// Between panels, and between panels and the window edge.
-    pub const GUTTER: f32 = S4;
+    pub const GUTTER: f32 = S16;
+    /// Between controls in a row or a stack.
+    pub const GAP: f32 = S12;
+    /// Left and right padding inside a button.
+    pub const BUTTON_PAD: f32 = S16;
+    /// Left and right padding inside a field or a menu row.
+    pub const FIELD_PAD: f32 = S12;
+    /// Padding inside a dialog.
+    pub const DIALOG_PAD: f32 = S24;
+    /// `INSET` in the active component presentation.
+    pub fn inset() -> f32 {
+        use crate::theme::ComponentStyle;
+        match crate::theme::component_style() {
+            ComponentStyle::Current => 12.0,
+            _ => INSET,
+        }
+    }
+
+    /// `GAP` in the active component presentation.
+    pub fn gap() -> f32 {
+        use crate::theme::ComponentStyle;
+        match crate::theme::component_style() {
+            ComponentStyle::Current => 8.0,
+            _ => GAP,
+        }
+    }
+
+    /// `BUTTON_PAD` in the active component presentation.
+    pub fn button_pad() -> f32 {
+        use crate::theme::ComponentStyle;
+        match crate::theme::component_style() {
+            ComponentStyle::Current => 10.0,
+            _ => BUTTON_PAD,
+        }
+    }
+
+    /// `FIELD_PAD` in the active component presentation.
+    pub fn field_pad() -> f32 {
+        use crate::theme::ComponentStyle;
+        match crate::theme::component_style() {
+            ComponentStyle::Current => 8.0,
+            _ => FIELD_PAD,
+        }
+    }
+
+    /// `DIALOG_PAD` in the active component presentation.
+    pub fn dialog_pad() -> f32 {
+        use crate::theme::ComponentStyle;
+        match crate::theme::component_style() {
+            ComponentStyle::Current => 16.0,
+            _ => DIALOG_PAD,
+        }
+    }
+
+    /// Panel padding in points; Line has unboxed sections.
+    pub fn panel_inset() -> f32 {
+        if crate::theme::component_style() == crate::theme::ComponentStyle::Line {
+            0.0
+        } else {
+            inset()
+        }
+    }
+    /// Space between document sections in points.
+    pub fn section_gap() -> f32 {
+        if crate::theme::component_style() == crate::theme::ComponentStyle::Line {
+            40.0
+        } else {
+            S16
+        }
+    }
 }
 
 /// Corner radii. Every corner in the suite comes from this scale.
 pub mod radius {
-    pub const SMALL: u8 = 4;
-    pub const CONTROL: u8 = 6;
-    pub const PANEL: u8 = 8;
-    pub const DIALOG: u8 = 12;
+    pub const SMALL: u8 = 8;
+    pub const CONTROL: u8 = 10;
+    pub const PANEL: u8 = 16;
+    pub const DIALOG: u8 = 20;
     pub const SCALE: [u8; 4] = [SMALL, CONTROL, PANEL, DIALOG];
+    /// `SMALL` in the active component presentation.
+    pub fn small() -> u8 {
+        use crate::theme::ComponentStyle;
+        match crate::theme::component_style() {
+            ComponentStyle::Current => 4,
+            ComponentStyle::Line => 6,
+            _ => SMALL,
+        }
+    }
+
+    /// `CONTROL` in the active component presentation.
+    pub fn control() -> u8 {
+        use crate::theme::ComponentStyle;
+        match crate::theme::component_style() {
+            ComponentStyle::Current => 6,
+            ComponentStyle::Line => 8,
+            _ => CONTROL,
+        }
+    }
+
+    /// `PANEL` in the active component presentation.
+    pub fn panel() -> u8 {
+        use crate::theme::ComponentStyle;
+        match crate::theme::component_style() {
+            ComponentStyle::Current => 8,
+            ComponentStyle::Line => 12,
+            _ => PANEL,
+        }
+    }
+
+    /// `DIALOG` in the active component presentation.
+    pub fn dialog() -> u8 {
+        use crate::theme::ComponentStyle;
+        match crate::theme::component_style() {
+            ComponentStyle::Current => 12,
+            ComponentStyle::Line => 16,
+            _ => DIALOG,
+        }
+    }
 }
 
 /// Fixed component sizes.
 pub mod size {
-    pub const APP_BAR: f32 = 40.0;
-    pub const HEADER: f32 = 32.0;
+    pub const APP_BAR: f32 = 56.0;
+    pub const HEADER: f32 = 48.0;
     pub const RULER: f32 = 24.0;
-    pub const CONTROL: f32 = 24.0;
+    pub const CONTROL: f32 = 36.0;
     pub const TAB_MAX: f32 = 160.0;
     pub const TAB_MIN: f32 = 64.0;
-    pub const SMALL_CONTROL: f32 = 20.0;
-    pub const ICON: f32 = 16.0;
+    pub const SMALL_CONTROL: f32 = 28.0;
+    pub const ICON: f32 = 18.0;
+    pub const BADGE: f32 = 24.0;
+    /// Thickness of a slider or progress track.
+    pub const SLIDER_TRACK: f32 = 6.0;
+    /// Diameter of a slider thumb.
+    pub const THUMB: f32 = 16.0;
     pub const TRACK_HEADER: f32 = 160.0;
     pub const TRACK: f32 = 40.0;
     pub const INSPECTOR_LABEL: f32 = 72.0;
     pub const PANEL_MIN: f32 = 240.0;
+    /// `APP_BAR` in the active component presentation.
+    pub fn app_bar() -> f32 {
+        use crate::theme::ComponentStyle;
+        match crate::theme::component_style() {
+            ComponentStyle::Current => 40.0,
+            _ => APP_BAR,
+        }
+    }
+
+    /// `HEADER` in the active component presentation.
+    pub fn header() -> f32 {
+        use crate::theme::ComponentStyle;
+        match crate::theme::component_style() {
+            ComponentStyle::Current => 32.0,
+            _ => HEADER,
+        }
+    }
+
+    /// `CONTROL` in the active component presentation.
+    pub fn control() -> f32 {
+        use crate::theme::ComponentStyle;
+        match crate::theme::component_style() {
+            ComponentStyle::Current => 24.0,
+            _ => CONTROL,
+        }
+    }
+
+    /// `ICON` in the active component presentation.
+    pub fn icon() -> f32 {
+        use crate::theme::ComponentStyle;
+        match crate::theme::component_style() {
+            ComponentStyle::Current => 16.0,
+            _ => ICON,
+        }
+    }
+
+    /// `BADGE` in the active component presentation.
+    pub fn badge() -> f32 {
+        use crate::theme::ComponentStyle;
+        match crate::theme::component_style() {
+            ComponentStyle::Current => 20.0,
+            _ => BADGE,
+        }
+    }
+
+    /// `SLIDER_TRACK` in the active component presentation.
+    pub fn slider_track() -> f32 {
+        use crate::theme::ComponentStyle;
+        match crate::theme::component_style() {
+            ComponentStyle::Current => 4.0,
+            _ => SLIDER_TRACK,
+        }
+    }
+
+    /// `THUMB` in the active component presentation.
+    pub fn thumb() -> f32 {
+        use crate::theme::ComponentStyle;
+        match crate::theme::component_style() {
+            ComponentStyle::Current => 12.0,
+            _ => THUMB,
+        }
+    }
+
+    /// Panel title row height in points.
+    pub fn panel_header() -> f32 {
+        if crate::theme::component_style() == crate::theme::ComponentStyle::Line {
+            28.0
+        } else {
+            header()
+        }
+    }
+    /// Checkbox/radio diameter in points.
+    pub fn selection() -> f32 {
+        if crate::theme::component_style() == crate::theme::ComponentStyle::Current {
+            14.0
+        } else {
+            18.0
+        }
+    }
 }
 
 /// Type scale: font sizes in points.
 pub mod font {
-    pub const DISPLAY: f32 = 22.0;
-    pub const HEADLINE: f32 = 16.0;
-    pub const TITLE: f32 = 14.0;
-    pub const BODY: f32 = 12.0;
-    pub const SMALL: f32 = 10.0;
+    pub const DISPLAY: f32 = 28.0;
+    pub const HEADLINE: f32 = 20.0;
+    pub const TITLE: f32 = 16.0;
+    pub const BODY: f32 = 14.0;
+    pub const SMALL: f32 = 12.0;
     pub const TIMECODE: f32 = 16.0;
+    /// `DISPLAY` in the active component presentation.
+    pub fn display() -> f32 {
+        use crate::theme::ComponentStyle;
+        match crate::theme::component_style() {
+            ComponentStyle::Current => 22.0,
+            _ => DISPLAY,
+        }
+    }
+
+    /// `HEADLINE` in the active component presentation.
+    pub fn headline() -> f32 {
+        use crate::theme::ComponentStyle;
+        match crate::theme::component_style() {
+            ComponentStyle::Current => 16.0,
+            _ => HEADLINE,
+        }
+    }
+
+    /// `TITLE` in the active component presentation.
+    pub fn title() -> f32 {
+        use crate::theme::ComponentStyle;
+        match crate::theme::component_style() {
+            ComponentStyle::Current => 14.0,
+            _ => TITLE,
+        }
+    }
+
+    /// `BODY` in the active component presentation.
+    pub fn body() -> f32 {
+        use crate::theme::ComponentStyle;
+        match crate::theme::component_style() {
+            ComponentStyle::Current => 12.0,
+            _ => BODY,
+        }
+    }
+
+    /// `SMALL` in the active component presentation.
+    pub fn small() -> f32 {
+        use crate::theme::ComponentStyle;
+        match crate::theme::component_style() {
+            ComponentStyle::Current => 10.0,
+            _ => SMALL,
+        }
+    }
 }
 
 /// WCAG 2 contrast ratio between two opaque colours.

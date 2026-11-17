@@ -2,11 +2,12 @@
 
 | File | Source | License |
 | --- | --- | --- |
+| `Figtree.ttf` | Figtree 2.002 variable face from the committed component prototype, weights 300–900; tabular figures frozen into the default glyphs | SIL OFL 1.1, see `Figtree-LICENSE.txt` |
 | `Inter-Regular.ttf`, `Inter-Medium.ttf`, `Inter-SemiBold.ttf` | [Inter 4.1](https://github.com/rsms/inter/releases/tag/v4.1), `extras/ttf/` | SIL OFL 1.1, see `Inter-LICENSE.txt` |
 | `NotoSansCJK-ja.otf`, `NotoSansCJK-zh-Hans.otf`, `NotoSansCJK-ko.otf`, `NotoSansCJK-names.otf` | [Noto Sans CJK 2.004](https://github.com/notofonts/noto-cjk/tree/Sans2.004/Sans/OTF), the JP, SC and KR Regular faces, subset by `subset-cjk.py` | SIL OFL 1.1, see `NotoSansCJK-LICENSE.txt` |
 | `lucide-subset.ttf` | [lucide-static 0.460.0](https://www.npmjs.com/package/lucide-static/v/0.460.0), `font/lucide.ttf` | ISC, see `Lucide-LICENSE.txt` |
 
-egui can't switch OpenType features on, so tabular figures are frozen into Inter's default glyphs, and both fonts are subset to what the suite uses. Inter keeps Basic Latin, Latin-1, Latin Extended-A (Polish, Czech, Turkish, ..), basic Cyrillic plus Ukrainian Ґ, and the dashes, quotes and symbols the catalogs use:
+Tabular figures are frozen into Figtree and Inter's default glyphs. Figtree supplies Regular 400, Medium 500 and SemiBold 600 through variation coordinates; Inter remains a fallback for scripts Figtree lacks. The Lucide face is subset to the suite's icons. Inter keeps Basic Latin, Latin-1, Latin Extended-A (Polish, Czech, Turkish, ..), basic Cyrillic plus Ukrainian Ґ, and the dashes, quotes and symbols the catalogs use:
 
 ```sh
 pip install fonttools opentype-feature-freezer

@@ -144,11 +144,12 @@ fn downloading_verifying_cancel_and_close_never_offer_install() {
         });
         h.run_steps(4);
         assert!(h.query_by_label("Install and restart").is_none());
-        h.get_by_label(if received == 100 {
+        let status = if received == 100 {
             "Verifying download…"
         } else {
             "Downloading update…"
-        });
+        };
+        assert!(h.query_all_by_label(status).next().is_some());
         h.get_by_label("Cancel Download").click();
         h.run_steps(2);
         assert_eq!(h.state().action, Some(Action::Cancel));

@@ -5,6 +5,7 @@ use egui_kittest::kittest::Queryable;
 use j_ui::empty_state::EmptyState;
 use j_ui::test_support::install_theme;
 use j_ui::theme::icon;
+use j_ui::tokens::font;
 
 struct State {
     body: Rect,
@@ -179,10 +180,10 @@ fn readable_theme_inks_and_type_sizes_keep_the_viewer_neutral() {
             h.run();
             let palette = if viewer { themes::DARK } else { palette };
             for (label, size, ink) in [
-                ("Nothing to Preview", 14.0, palette.ink),
+                ("Nothing to Preview", font::TITLE, palette.ink),
                 (
                     "Add a video clip to the timeline to see it here.",
-                    12.0,
+                    font::BODY,
                     palette.ink_3,
                 ),
             ] {

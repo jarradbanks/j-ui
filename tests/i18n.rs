@@ -40,6 +40,10 @@ fn every_character_has_a_glyph() {
         common::missing_glyphs(&gallery::CATALOG),
         Vec::<String>::new()
     );
+    assert_eq!(
+        common::missing_glyphs(&gallery::PAGE_CATALOG),
+        Vec::<String>::new()
+    );
 }
 
 #[test]
@@ -108,17 +112,33 @@ fn gallery_switches_language_without_a_restart() {
             }
         });
     harness.run_steps(4);
-    for label in ["Más pestañas", "Principal", "Controles", "Al pasar"] {
-        assert!(harness.query_by_label(label).is_some(), "no {label:?}");
+    for label in [
+        "Estilos de componentes",
+        "Nuevo proyecto",
+        "Tipografía",
+        "Componentes",
+    ] {
+        assert!(
+            harness.query_all_by_label(label).next().is_some(),
+            "no {label:?}"
+        );
     }
-    assert!(harness.query_by_label("More Tabs").is_none());
+    assert!(harness.query_by_label("Component Styles").is_none());
 
     i18n::set_language("en");
     harness.run_steps(4);
-    for label in ["More Tabs", "Primary", "Widgets", "Hover"] {
-        assert!(harness.query_by_label(label).is_some(), "no {label:?}");
+    for label in [
+        "Component Styles",
+        "New Project",
+        "Typography",
+        "Components",
+    ] {
+        assert!(
+            harness.query_all_by_label(label).next().is_some(),
+            "no {label:?}"
+        );
     }
-    assert!(harness.query_by_label("Más pestañas").is_none());
+    assert!(harness.query_by_label("Estilos de componentes").is_none());
 }
 
 #[test]

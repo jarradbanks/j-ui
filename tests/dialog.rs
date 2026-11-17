@@ -5,6 +5,7 @@ use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
 use j_ui::dialog::Dialog;
 use j_ui::test_support as common;
+use j_ui::tokens::{size, space};
 use j_ui::widgets::ButtonKind;
 
 #[test]
@@ -64,6 +65,8 @@ fn switching_to_a_long_dialog_settles_the_footer_and_preserves_dismissal() {
         let notices = "Third-party licence text.\n".repeat(200);
         let mut h = Harness::builder()
             .with_size([1280.0, 720.0])
+            // Layout and the 120ms focus transition both settle before checking the footer.
+            .with_max_steps(8)
             .build_ui_state(
                 move |ui, stage: &mut usize| {
                     if common::install_theme(ui, &mut fresh) || *stage == 2 {
@@ -147,7 +150,7 @@ fn footer_fits_content_aligns_right_and_wraps_in_reading_order() {
             let rects = h.state();
             let body = h.get_by_label("Body").rect();
             assert!(
-                rects[0].top() - body.bottom() < 12.0,
+                rects[0].top() - body.bottom() <= space::GAP,
                 "footer claimed spare height: {rects:?}"
             );
             for rect in rects {
@@ -156,7 +159,7 @@ fn footer_fits_content_aligns_right_and_wraps_in_reading_order() {
                     rect.right() <= body.left() + width + 1.0,
                     "right overflow: {rect:?}"
                 );
-                assert!(rect.height() >= 28.0 - 1.0 / scale);
+                assert!(rect.height() >= size::CONTROL - 1.0 / scale);
             }
             let done = rects[2];
             assert!(
@@ -172,7 +175,7 @@ fn footer_fits_content_aligns_right_and_wraps_in_reading_order() {
                 }
             }
             if width == 160.0 {
-                assert!(rects[1].height() > 28.0);
+                assert!(rects[1].height() > size::CONTROL);
             }
         }
     }

@@ -1,0 +1,420 @@
+Native Component Styles gallery verification — 2026-11-17
+Base commit: 954dddb; no consumer pins or versions changed.
+Final workspace result: 160 passed; 0 failed; 0 ignored.
+
+$ cargo fmt --all --check
+(no output; exit 0)
+
+$ cargo build --workspace
+   Compiling j-ui v0.4.0 (/home/jarrad/orca/workspaces/j-ui/soft-restyle-finish)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.08s
+
+$ cargo build --example gallery --features debug-ui,hot-reload
+   Compiling j-ui v0.4.0 (/home/jarrad/orca/workspaces/j-ui/soft-restyle-finish)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.77s
+
+$ cargo clippy --workspace --all-targets -- -D warnings
+    Checking j-ui v0.4.0 (/home/jarrad/orca/workspaces/j-ui/soft-restyle-finish)
+    Checking j-ui-debug v0.1.0 (/home/jarrad/orca/workspaces/j-ui/soft-restyle-finish/crates/j-ui-debug)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.10s
+
+$ UPDATE_SNAPSHOTS=1 VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json WGPU_BACKEND=vulkan JVID_GPU_TESTS=required cargo test --test gallery -- --test-threads=1
+   Compiling j-ui v0.4.0 (/home/jarrad/orca/workspaces/j-ui/soft-restyle-finish)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.46s
+     Running tests/gallery.rs (target/debug/deps/gallery-cbf9543ba84a49d8)
+
+running 7 tests
+test corners_come_from_the_scale ... ok
+test gallery_catalogs_match ... ok
+test gallery_controls_and_rail_remain_live_when_scrolled ... ok
+test gallery_font_and_style_choices_rebuild_the_page ... ok
+test gallery_grid_tracks_the_reference_at_both_widths_and_scales ... ok
+test gallery_ink_is_unclipped_and_project_actions_align ... ok
+test gallery_snapshots ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.94s
+
+
+$ VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json WGPU_BACKEND=vulkan JVID_GPU_TESTS=required cargo test --workspace --no-fail-fast -- --test-threads=1
+   Compiling j-ui-debug v0.1.0 (/home/jarrad/orca/workspaces/j-ui/soft-restyle-finish/crates/j-ui-debug)
+   Compiling j-ui v0.4.0 (/home/jarrad/orca/workspaces/j-ui/soft-restyle-finish)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 37.55s
+     Running unittests src/lib.rs (target/debug/deps/j_ui-8783c00a748468f7)
+
+running 29 tests
+test i18n::tests::catalogs_flatten_sections_into_keys ... ok
+test i18n::tests::interpolation_fills_known_names_and_keeps_the_rest ... ok
+test i18n::tests::locales_normalize_to_shipped_languages ... ok
+test i18n::tests::mismatches_name_each_way_a_translation_drifts ... ok
+test i18n::tests::non_text_values_are_reported_not_loaded ... ok
+test i18n::tests::plural_categories_follow_cldr_for_whole_numbers ... ok
+test i18n::tests::pseudo_pads_about_forty_percent ... ok
+test i18n::tests::settings_resolve_with_english_fallback ... ok
+test i18n::tests::wave_one_plural_rules_match_cldr ... ok
+test motion::tests::colors_follow_css_ease_and_reverse_without_jumping ... ok
+test motion::tests::disabling_mid_transition_settles_every_target_and_stops_repaints ... ok
+test motion::tests::ease_out_in_both_directions_and_no_repaints_after_settling ... ok
+test motion::tests::entrance_starts_after_idle_and_finishes_in_the_shared_duration ... ok
+test theme::component_style::tests::nested_presentations_restore_soft_even_after_unwinding ... ok
+test themes::tests::bad_hex_and_unknown_tokens_are_errors ... ok
+test themes::tests::broken_theme_on_first_load_falls_back_to_dark ... ok
+test themes::tests::built_in_applies_once ... ok
+test themes::tests::built_ins_round_trip_and_keep_text_readable ... ok
+test themes::tests::file_change_reloads_without_restart ... ok
+test themes::tests::folder_themes_list_after_the_built_ins ... ok
+test themes::tests::older_themes_can_omit_the_new_variants ... ok
+test themes::tests::partial_file_falls_back_to_dark ... ok
+test tokens::tests::documented_text_contrasts_hold ... ok
+test tokens::tests::ink_on_every_clip_colour_reaches_4_5 ... ok
+test widgets::autocomplete::tests::matches_ignore_case_and_keep_byte_ranges_valid ... ok
+test widgets::tests::curve_points_insert_in_order_and_drag_between_their_neighbours ... ok
+test widgets::tests::menus_open_toward_the_room_and_stop_at_the_bounds ... ok
+test widgets::tests::timecode_formats ... ok
+test widgets::tests::wheel_puck_follows_the_pointer_inside_the_disc_with_y_up ... ok
+
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/components.rs (target/debug/deps/components-e94bcfe656554b90)
+
+running 4 tests
+test autocomplete_filters_moves_and_picks_from_the_keyboard ... ok
+test components_snapshots ... ok
+test radio_tabs_table_and_toast_respond_to_clicks ... ok
+test rows_are_centred_columns_aligned_and_everything_stays_inside ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.30s
+
+     Running tests/dialog.rs (target/debug/deps/dialog-b5b85af2f461e81b)
+
+running 6 tests
+test footer_fits_content_aligns_right_and_wraps_in_reading_order ... ok
+test footer_keyboard_order_and_confirm_default_are_preserved ... ok
+test measuring_a_footer_does_not_duplicate_accessible_actions ... ok
+test short_dialog_hugs_content ... ok
+test switching_to_a_long_dialog_settles_the_footer_and_preserves_dismissal ... ok
+test wrapping_a_footer_preserves_keyboard_focus ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/empty_state.rs (target/debug/deps/empty_state-b1a94f170ecbe3fb)
+
+running 5 tests
+test centres_the_whole_group_below_header_and_above_footer_at_240px ... ok
+test long_localized_action_can_scroll_without_expanding_the_panel ... ok
+test readable_theme_inks_and_type_sizes_keep_the_viewer_neutral ... ok
+test short_body_scrolls_to_a_keyboard_action ... ok
+test unbounded_parent_uses_the_finite_visible_body ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/gallery.rs (target/debug/deps/gallery-cbf9543ba84a49d8)
+
+running 7 tests
+test corners_come_from_the_scale ... ok
+test gallery_catalogs_match ... ok
+test gallery_controls_and_rail_remain_live_when_scrolled ... ok
+test gallery_font_and_style_choices_rebuild_the_page ... ok
+test gallery_grid_tracks_the_reference_at_both_widths_and_scales ... ok
+test gallery_ink_is_unclipped_and_project_actions_align ... ok
+test gallery_snapshots ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.37s
+
+     Running tests/i18n.rs (target/debug/deps/i18n-6cc0efaa9dd9bf59)
+
+running 10 tests
+test cjk_faces_stay_within_budget ... ok
+test every_character_has_a_glyph ... ok
+test every_language_is_listed_by_its_own_name_and_falls_back_to_english ... ok
+test gallery_switches_language_without_a_restart ... ok
+test japanese_chrome_uses_its_face_only_while_active_content_keeps_all_scripts ... ok
+test missing_keys_and_placeholders_stay_readable ... ok
+test plurals_use_each_languages_rule ... ok
+test polish_russian_and_their_neighbours_have_glyphs ... ok
+test unsupported_languages_show_english ... ok
+test widget_strings_follow_a_live_switch ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s
+
+     Running tests/i18n_guard.rs (target/debug/deps/i18n_guard-f28241a08eb1e778)
+
+running 2 tests
+test guard_catches_every_bypass_shape ... ok
+test ui_text_goes_through_the_translation_layer ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s
+
+     Running tests/input_font_metrics.rs (target/debug/deps/input_font_metrics-9124b8ba2633b666)
+
+running 2 tests
+test caret_selection_and_ime_follow_the_editor_origin ... ok
+test singleline_centres_font_ink_at_every_height_and_scale ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.14s
+
+     Running tests/input_layout.rs (target/debug/deps/input_layout-5356f7a86a506c3c)
+
+running 3 tests
+test focus_ring_is_complete_at_all_clipped_container_edges ... ok
+test multiline_keeps_scrolling_content_inside_padding ... ok
+test single_line_placeholder_and_value_are_centred_and_padded ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.19s
+
+     Running tests/layout.rs (target/debug/deps/layout-4bba654ed0440bb5)
+
+running 8 tests
+test a_panel_is_borderless_until_focused_and_has_no_header_divider ... ok
+test a_translucent_swatch_shows_the_checkerboard_and_an_opaque_one_is_solid ... ok
+test header_holds_still_between_title_and_tabs ... ok
+test icon_buttons_centre_their_glyphs_ink ... ok
+test popup_border_is_one_physical_pixel ... ok
+test snapshots ... ok
+test tabs_start_at_the_inset_with_the_active_one_underlined ... ok
+test title_and_content_start_at_the_inset ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.85s
+
+     Running tests/selection.rs (target/debug/deps/selection-02f43357a181c174)
+
+running 3 tests
+test circle_selection_mouse_space_mixed_focus_and_fractional_zoom ... ok
+test switch_mouse_keyboard_and_disabled_input ... ok
+test tall_search_clear_reports_change_and_returns_focus ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/soft_fixes.rs (target/debug/deps/soft_fixes-b9adcdcf4e4c2443)
+
+running 3 tests
+test control_colors_animate_between_states_and_settle_in_120ms ... ok
+test high_contrast_surfaces_and_selected_controls_remain_distinct ... ok
+test painted_labels_and_notice_actions_center_their_ink ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.68s
+
+     Running tests/soft_style.rs (target/debug/deps/soft_style-a56420807614be5a)
+
+running 4 tests
+test autocomplete_empty_escape_reopen_and_short_viewport ... ok
+test dropdown_keyboard_selection_escape_outside_and_disabled ... ok
+test soft_states_geometry_pixels_and_snapshots ... ok
+test typography_preserves_weights_tracking_and_tabular_numbers ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.79s
+
+     Running tests/update.rs (target/debug/deps/update-58f316b7d3b3ea3c)
+
+running 6 tests
+test automatic_checks_are_optional_and_close_has_a_visible_effect ... ok
+test downloading_verifying_cancel_and_close_never_offer_install ... ok
+test installation_is_disabled_during_work_and_in_source_builds ... ok
+test save_and_restart_requests_a_checkpoint_and_retains_ready_until_app_honors_it ... ok
+test source_builds_open_releases_and_errors_allow_retry ... ok
+test update_gallery_snapshots ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.40s
+
+     Running tests/widgets.rs (target/debug/deps/widgets-695a1da6bde1a28f)
+
+running 3 tests
+test additions_snapshots_dark_and_light ... ok
+test menu_rows_keep_checkmarks_and_disable_mouse_and_keyboard ... ok
+test slider_orientation_pointer_keyboard_steps_and_disabled ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+     Running unittests src/lib.rs (target/debug/deps/j_ui_debug-d5a27b8746f1acce)
+
+running 19 tests
+test bridge::pointer_tests::adjacent_clicks_keep_their_native_widgets_across_queued_batches ... ok
+test bridge::pointer_tests::deferred_gestures_keep_age_generation_and_resize_fences ... ok
+test bridge::pointer_tests::extra_layout_passes_do_not_advance_the_next_pointer_transition ... ok
+test bridge::pointer_tests::native_focus_loss_cancels_deferred_gestures_and_releases_controls ... ok
+test bridge::pointer_tests::queued_drag_moves_are_observed_before_release ... ok
+test bridge::pointer_tests::rapid_clicks_in_one_batch_each_change_native_state ... ok
+test bridge::pointer_tests::repeated_arrow_presses_and_batched_unicode_text_reach_native_widgets ... ok
+test bridge::pointer_tests::reset_between_pointer_gestures_does_not_activate_the_cancelled_button ... ok
+test bridge::tests::explicit_targets_keep_caller_clipping_and_parent_targets_stay_below_children ... ok
+test bridge::tests::plugin_is_idempotent_discovers_nodes_and_removes_dynamic_targets ... ok
+test bridge::tests::queued_input_is_fenced_after_layout_changes_delays_and_disconnect ... ok
+test bridge::tests::rendered_nodes_match_clipped_geometry_across_themes_sizes_and_dpi ... ok
+test bridge::tests::screenshots_keep_matching_metadata_and_leave_app_screenshots_alone ... ok
+test bridge::tests::screenshots_use_metadata_from_the_final_layout_pass ... ok
+test input::tests::native_printable_keys_activate_buttons_shortcuts_and_insert_text_once ... ok
+test input::tests::validates_input_and_releases_every_held_control ... ok
+test server::tests::continuous_native_frames_do_not_starve_input ... ok
+test server::tests::transport_authenticates_and_rejects_stale_or_invalid_input ... ok
+test server::tests::trickling_requests_cannot_extend_context_shutdown ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.25s
+
+     Running unittests src/lib.rs (target/debug/deps/j_update-68a6dce82fc225a6)
+
+running 43 tests
+test config::tests::configuration_rejects_paths_urls_duplicate_contracts_and_stage_collisions ... ok
+test config::tests::legacy_credential_names_and_stricter_token_size_stay_compatible ... ok
+test config::tests::portable_marker_overrides_an_installed_marker_for_all_apps ... ok
+test install::ported_jplay::tests::failures_and_reboot_requests_still_restore_the_app ... ok
+test install::ported_jvec::tests::failures_and_reboot_requests_still_restore_the_app ... ok
+test install::ported_jvid::tests::installer_failure_cancel_and_permission_errors_attempt_old_app_restart ... ok
+test install::ported_jvid::tests::staged_payload_is_reverified_and_version_bound_before_execution ... ok
+test metadata::extra_tests::stage_reads_and_signed_unknown_fields_are_bounded_and_rejected ... ok
+test metadata::ported_jplay::tests::portable_external_and_wrong_platform_builds_never_self_install ... ok
+test metadata::ported_jvec::contract_tests::signed_contract_binds_schema_repository_target_format_name_size_and_hash ... ok
+test metadata::ported_jvec::contract_tests::stable_versions_use_semantic_order_and_reject_nonstable_tags ... ok
+test metadata::ported_jvec::tests::portable_external_and_wrong_platform_builds_never_self_install ... ok
+test metadata::ported_jvid::tests::portable_external_and_wrong_platform_builds_never_self_install ... ok
+test network::ported_jplay::cancellation_corruption_truncation_and_oversized_payloads_fail_verification ... ok
+test network::ported_jplay::equal_versions_downgrades_and_api_auth_errors_are_handled_without_secret_output ... ok
+test network::ported_jplay::even_same_host_redirects_do_not_receive_the_github_credential ... ok
+test network::ported_jplay::invalid_signatures_and_missing_update_files_never_authorize_a_download ... ok
+test network::ported_jplay::private_api_asset_ids_are_used_for_signed_metadata_and_verified_installer ... ok
+test network::ported_jvec::cancellation_corruption_truncation_and_oversized_payloads_fail_verification ... ok
+test network::ported_jvec::equal_versions_downgrades_and_api_auth_errors_are_handled_without_secret_output ... ok
+test network::ported_jvec::even_same_host_redirects_do_not_receive_the_github_credential ... ok
+test network::ported_jvec::invalid_signatures_and_missing_update_files_never_authorize_a_download ... ok
+test network::ported_jvec::private_api_asset_ids_are_used_for_signed_metadata_and_verified_installer ... ok
+test network::ported_jvec::wrong_target_and_signed_tag_mismatch_are_errors_instead_of_current ... ok
+test network::ported_jvid::authentic_metadata_is_bound_to_repository_schema_target_format_name_and_version ... ok
+test network::ported_jvid::corruption_truncation_overrun_read_write_failures_and_cancellation_are_rejected ... ok
+test network::ported_jvid::signed_check_download_cancel_failure_and_retry_over_http ... ok
+test network::ported_jvid::stable_selection_uses_semver_and_ignores_drafts_prereleases_and_downgrades ... ok
+test network::tests::bounded_listing_rejects_ten_full_pages_and_metadata_caps ... ok
+test network::tests::insecure_or_userinfo_redirects_and_redirect_loops_are_rejected ... ok
+test network::tests::legacy_private_repo_retries_each_api_request_once_then_strips_auth_on_redirect ... ok
+test network::tests::provider_and_malicious_http_errors_do_not_echo_secrets_or_urls ... ok
+test network::tests::public_releases_are_anonymous_and_never_call_the_provider ... ok
+test network::tests::strict_newest_release_missing_target_does_not_fall_back_to_an_older_release ... ok
+test release::key_tests::init_key_never_implicitly_rotates_an_existing_pin ... ok
+test release::ported_jplay::tests::signed_local_release_rejects_wrong_key_wrong_version_and_changed_bytes ... ok
+test release::ported_jvec::tests::signed_local_release_rejects_wrong_key_wrong_version_and_changed_bytes ... ok
+test state::tests::every_kind_of_active_work_defers_installation ... ok
+test state::worker_tests::a_disconnected_worker_becomes_a_retryable_error ... ok
+test state::worker_tests::jplay_every_kind_of_active_work_defers_installation ... ok
+test state::worker_tests::preparation_failure_preserves_the_diagnostic_without_installing ... ok
+test state::worker_tests::progress_ready_error_retry_and_cancelled_worker_results_have_explicit_states ... ok
+test state::worker_tests::ready_download_survives_checks_and_work_deferral_and_is_cleaned_on_drop ... ok
+
+test result: ok. 43 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+     Running unittests src/bin/j-update-tool.rs (target/debug/deps/j_update_tool-46df8a3537972378)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/generator.rs (target/debug/deps/generator-d1fbd14beb9d65c9)
+
+running 2 tests
+test pipeline_generator_signs_exact_final_artifacts_and_rejects_a_mismatched_key ... ok
+test pipeline_generator_without_production_configuration_never_emits_metadata ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+   Doc-tests j_ui
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests j_ui_debug
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests j_update
+
+running 1 test
+test crates/j-update/src/lib.rs - (line 11) ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.61s; merged doctests compilation took 0.60s
+
+$ VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json WGPU_BACKEND=vulkan JVID_GPU_TESTS=required cargo test --test gallery --test widgets -- --test-threads=1 --nocapture
+   Compiling j-ui v0.4.0 (/home/jarrad/orca/workspaces/j-ui/soft-restyle-finish)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.57s
+     Running tests/gallery.rs (target/debug/deps/gallery-cbf9543ba84a49d8)
+
+running 7 tests
+test corners_come_from_the_scale ... ok
+test gallery_catalogs_match ... ok
+test gallery_controls_and_rail_remain_live_when_scrolled ... ok
+test gallery_font_and_style_choices_rebuild_the_page ... ok
+test gallery_grid_tracks_the_reference_at_both_widths_and_scales ... PASSED gallery polish: 17 reference sections, responsive columns, equal card rows, margins and gutters at 1280/1920 and 1/1.5x
+ok
+test gallery_ink_is_unclipped_and_project_actions_align ... PASSED gallery polish: painted text fits its clip; project footers and control heights align at both widths and scales
+ok
+test gallery_snapshots ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.28s
+
+     Running tests/widgets.rs (target/debug/deps/widgets-695a1da6bde1a28f)
+
+running 3 tests
+test additions_snapshots_dark_and_light ... ok
+test menu_rows_keep_checkmarks_and_disable_mouse_and_keyboard ... ok
+test slider_orientation_pointer_keyboard_steps_and_disabled ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.26s
+
+
+$ HTML polish: prototype/component-styles/index.html at 1280 and 1920 × 860
+polish-check file:///home/jarrad/orca/workspaces/j-ui/soft-restyle-finish/prototype/component-styles/index.html
+
+== 1280px
+PASS   Text and icons sit on the vertical centre of their chip or button
+PASS   Chips and icons share a centre line with the text beside them
+PASS   The same element keeps one edge in every repeated row
+PASS   Chips of one kind in a column share one width
+PASS   Blocks on one row share one height
+PASS   Repeated blocks share one padding
+PASS   No chip or button is cut off
+PASS   No chip or button label wraps
+PASS   Nothing scrolls sideways
+PASS   Sticky headers stay on top
+PASS   Empty states are centred
+PASS   Titles, tabs, chips and statuses are in Title Case
+REVIEW Copy rules: no '·', no doubled dashes, no placeholders (5)
+         button "Snap to Grid Ctrl+G": button label is 4 words
+         button "Interview Cut Ready 1.24 GB": button label is 5 words
+         button "B-Roll Harbour Synced 812 MB": button label is 5 words
+         button "Voiceover Take 3 Offline 46 MB": button label is 6 words
+         button "Title Card Draft 3 MB": button label is 5 words
+PASS   Text cut with an ellipsis (review)
+
+== 1920px
+PASS   Text and icons sit on the vertical centre of their chip or button
+PASS   Chips and icons share a centre line with the text beside them
+PASS   The same element keeps one edge in every repeated row
+PASS   Chips of one kind in a column share one width
+PASS   Blocks on one row share one height
+PASS   Repeated blocks share one padding
+PASS   No chip or button is cut off
+PASS   No chip or button label wraps
+PASS   Nothing scrolls sideways
+PASS   Sticky headers stay on top
+PASS   Empty states are centred
+PASS   Titles, tabs, chips and statuses are in Title Case
+REVIEW Copy rules: no '·', no doubled dashes, no placeholders (5)
+         button "Snap to Grid Ctrl+G": button label is 4 words
+         button "Interview Cut Ready 1.24 GB": button label is 5 words
+         button "B-Roll Harbour Synced 812 MB": button label is 5 words
+         button "Voiceover Take 3 Offline 46 MB": button label is 6 words
+         button "Title Card Draft 3 MB": button label is 5 words
+PASS   Text cut with an ellipsis (review)
+
+PASSED
+
+$ python3 /mnt/c/Users/Jarrad/.agents/skills/code-cleanup/style-check.py
+REVIEW  rust-deep-if-let  tests/gallery.rs:48  nested `if let`; consider a flat `let ... else { return ... };` guard
+style-check: PASSED, 0 fail, 1 review
+
+$ Actual native executable captures: debug bridge, Xvfb, lavapipe
+Captured actual native window 1 1280 860 1.0
+Captured actual native window 1.5 1920 1290 1.5
+
+$ git diff --check && git diff --cached --check
+(no output; exit 0)

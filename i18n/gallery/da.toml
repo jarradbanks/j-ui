@@ -9,6 +9,7 @@ disabled = "Deaktiveret"
 loading_error = "Indlæser / fejl"
 
 [panel]
+components = "Komponenter"
 widgets = "Widgets"
 effects = "Effekter"
 text = "Tekst"
@@ -21,7 +22,7 @@ audio = "Lyd"
 markers = "Markører"
 history = "Historik"
 captions = "Billedtekster"
-overflow = "Faner under 64px flyttes ind i menuen med vinkelpilen."
+overflow = "Faner uden plads vises i pilemenuen."
 type_and_colour = "Skrift og farve"
 
 [row]
@@ -48,6 +49,8 @@ slider = "Skyder"
 keyframe = "Keyframe"
 
 [demo]
+no_matches = "Ingen matchende elementer"
+dismiss = "Luk"
 delete = "Slet"
 export = "Eksportér"
 width_prefix = "B"
@@ -71,12 +74,12 @@ ochre = "Okker"
 green = "Grøn"
 
 [type]
-display = "Display 22"
-headline = "Overskrift 16"
-title = "Titel 14"
-body_strong = "Brødtekst fed 12"
-body = "Brødtekst 12 · 0123456789 står stille"
-small = "Lille 10 · genvejstip"
+display = "Display 28"
+headline = "Overskrift 20"
+title = "Titel 16"
+body_strong = "Brødtekst fed 14"
+body = "Brødtekst 14, 0123456789 står stille"
+small = "Lille 12, genvejstip"
 
 [clip]
 video = "Video"

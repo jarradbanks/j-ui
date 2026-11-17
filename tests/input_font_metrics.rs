@@ -5,7 +5,7 @@ use egui_kittest::{Harness, kittest::Queryable};
 use j_ui::{test_support, theme, tokens::color, widgets::TextInput};
 
 const SCALES: [f32; 3] = [1.0, 1.25, 1.5];
-const HEIGHTS: [f32; 4] = [24.0, 32.0, 36.0, 48.0];
+const HEIGHTS: [f32; 4] = [36.0, 40.0, 48.0, 56.0];
 
 fn install_font(ui: &egui::Ui, fresh: &mut bool, offset: f32) -> bool {
     if !std::mem::take(fresh) {
@@ -14,7 +14,7 @@ fn install_font(ui: &egui::Ui, fresh: &mut bool, offset: f32) -> bool {
     theme::install(ui.ctx());
     let mut fonts = theme::fonts("en");
     // Emulate Onest's ink above its line-box centre without another bundled font.
-    std::sync::Arc::make_mut(fonts.font_data.get_mut("inter").unwrap())
+    std::sync::Arc::make_mut(fonts.font_data.get_mut("figtree").unwrap())
         .tweak
         .y_offset = offset;
     ui.ctx().set_fonts(fonts);
@@ -50,6 +50,7 @@ fn singleline_centres_font_ink_at_every_height_and_scale() {
         return;
     }
     let mut failures = Vec::new();
+    let mut baseline = std::collections::BTreeMap::new();
     for offset in [0.0, -2.0, 2.0] {
         for ppp in SCALES {
             for size in [[1280.0, 720.0], [1920.0, 1080.0]] {
@@ -100,6 +101,13 @@ fn singleline_centres_font_ink_at_every_height_and_scale() {
                     let rect = field_rect(index);
                     let bounds = text.visual_bounding_rect();
                     let geometry = (bounds.center().y - rect.center().y).abs() * ppp;
+                    let ink = if index % 2 == 0 {
+                        color::ink_3()
+                    } else {
+                        color::ink()
+                    };
+                    // Equal coverage for muted placeholder and bright value pixels.
+                    let threshold = (u16::from(ink.r()) + u16::from(color::ground().r())) / 2;
                     let mut top = u32::MAX;
                     let mut bottom = 0;
                     for y in ((rect.top() + 2.0) * ppp).round() as u32
@@ -108,7 +116,7 @@ fn singleline_centres_font_ink_at_every_height_and_scale() {
                         for x in (bounds.left() * ppp).floor() as u32
                             ..(bounds.right() * ppp).ceil() as u32
                         {
-                            if image.get_pixel(x, y)[0] > 80 {
+                            if u16::from(image.get_pixel(x, y)[0]) > threshold {
                                 top = top.min(y);
                                 bottom = bottom.max(y);
                             }
@@ -116,11 +124,19 @@ fn singleline_centres_font_ink_at_every_height_and_scale() {
                     }
                     assert_ne!(top, u32::MAX, "visible glyphs");
                     let raster = ((top + bottom + 1) as f32 / 2.0 - rect.center().y * ppp).abs();
-                    let tolerance = if offset == 0.0 { 1.0 } else { 0.5 };
+                    let key = (ppp.to_bits(), size[0] as u32, index);
+                    if offset == 0.0 {
+                        baseline.insert(key, raster);
+                    } else {
+                        assert_eq!(
+                            raster, baseline[&key],
+                            "font offset must not move the raster"
+                        );
+                    }
                     println!(
                         "{size:?} {ppp}x offset={offset} field={index}: geometry={geometry:.3}px raster={raster:.3}px"
                     );
-                    if geometry > tolerance || raster > tolerance {
+                    if geometry > 0.5 || raster > 1.0 {
                         failures.push(format!("{size:?} {ppp}x offset={offset} field={index}: geometry={geometry:.3}px raster={raster:.3}px"));
                     }
                     assert!(bounds.left() >= rect.left() + 8.0);
@@ -131,7 +147,7 @@ fn singleline_centres_font_ink_at_every_height_and_scale() {
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
     println!(
-        "PASSED font ink: placeholder/value/plain/search, heights 24/32/36/48, 1280x720/1920x1080, DPI 1/1.25/1.5; shifted fonts <=0.5px, Inter <=1px"
+        "PASSED font ink: placeholder/value/plain/search, heights 36/40/48/56, 1280x720/1920x1080, DPI 1/1.25/1.5; geometry <=0.5px, raster <=1px and unchanged by font offsets"
     );
 }
 
@@ -278,6 +294,6 @@ fn caret_selection_and_ime_follow_the_editor_origin() {
         }
     }
     println!(
-        "PASSED caret/selection/IME: empty/typed/selected/composing, plain/search, heights 24/32/36/48, DPI 1/1.25/1.5; one stable editor origin"
+        "PASSED caret/selection/IME: empty/typed/selected/composing, plain/search, heights 36/40/48/56, DPI 1/1.25/1.5; one stable editor origin"
     );
 }

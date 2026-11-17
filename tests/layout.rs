@@ -1,4 +1,4 @@
-//! DESIGN.md Layout > Checks for the panel frame, 32px header and tabs, measured on
+//! DESIGN.md Layout > Checks for the panel frame, 48px header and tabs, measured on
 //! rendered pixels at 100% and 150% scale. Headless wgpu on any Vulkan driver;
 //! `j_ui::test_support::gpu()` picks Mesa lavapipe when installed (see README.md).
 
@@ -109,8 +109,9 @@ impl Shot {
         b
     }
 
+    /// The header's rows, short of the active tab's underline.
     fn header_rows(&self) -> std::ops::Range<u32> {
-        self.px(ORIGIN) + 1..self.px(ORIGIN + size::HEADER) - 1
+        self.px(ORIGIN) + 1..self.px(ORIGIN + size::HEADER - 3.0)
     }
 }
 
@@ -119,7 +120,7 @@ fn near(a: Color32, b: Color32) -> bool {
 }
 
 #[test]
-fn hairlines_are_one_physical_pixel() {
+fn a_panel_is_borderless_until_focused_and_has_no_header_divider() {
     if !common::gpu() {
         return;
     }
@@ -128,25 +129,22 @@ fn hairlines_are_one_physical_pixel() {
             for focused in [false, true] {
                 let s = Shot::take(ppp, mode, focused);
                 let ctx = format!("{ppp}x {mode:?} focused={focused}");
-                // Down the middle (between the two tabs): top border, header divider, bottom border.
+                // Down the middle, clear of the tabs, and across the content below the label.
                 let x = s.px(ORIGIN + W / 2.0);
                 let down = s.line_runs((0..s.height).map(|y| (x, y)));
-                let top = s.px(ORIGIN);
-                let divider = s.px(ORIGIN + size::HEADER) - 1;
-                let bottom = s.px(ORIGIN + H) - 1;
-                assert_eq!(down, vec![(top, 1), (divider, 1), (bottom, 1)], "{ctx}");
-                // Across the content, below the label: left and right borders.
                 let y = s.px(ORIGIN + H - 20.0);
                 let across = s.line_runs((0..s.width).map(|x| (x, y)));
+                if !focused {
+                    assert_eq!((down, across), (vec![], vec![]), "{ctx}");
+                    continue;
+                }
+                // The focus border is one physical pixel on every side.
+                let top = s.px(ORIGIN);
+                let bottom = s.px(ORIGIN + H) - 1;
                 let right = s.px(ORIGIN + W) - 1;
+                assert_eq!(down, vec![(top, 1), (bottom, 1)], "{ctx}");
                 assert_eq!(across, vec![(top, 1), (right, 1)], "{ctx}");
-                let border = if focused {
-                    color::blue()
-                } else {
-                    color::border()
-                };
-                assert!(near(s.at(x, top), border), "{ctx}");
-                assert!(near(s.at(x, divider), color::border()), "{ctx}");
+                assert!(near(s.at(x, top), color::blue()), "{ctx}");
             }
         }
     }
@@ -160,11 +158,12 @@ fn header_holds_still_between_title_and_tabs() {
     for ppp in SCALES {
         let title = Shot::take(ppp, Mode::Title, false);
         let tabs = Shot::take(ppp, Mode::Tabs, false);
-        let left = title.px(ORIGIN) + 1..title.px(ORIGIN + 80.0);
+        // The first label only: the second tab starts past it.
+        let left = title.px(ORIGIN) + 1..title.px(ORIGIN + 70.0);
         let t = title.ink_box(left.clone(), title.header_rows());
         let b = tabs.ink_box(left, tabs.header_rows());
         // "Media" has no descenders, so its last ink row is the baseline. The cap
-        // height may differ by an antialiased row, as the tab label sits at another x.
+        // height may differ by an antialiased row, as the tab label is a lighter weight.
         assert_eq!(t.3, b.3, "{ppp}x baseline: title {t:?} vs tabs {b:?}");
         assert!(
             t.1.abs_diff(b.1) <= 1,
@@ -174,20 +173,20 @@ fn header_holds_still_between_title_and_tabs() {
 }
 
 #[test]
-fn title_and_content_start_twelve_in() {
+fn title_and_content_start_at_the_inset() {
     if !common::gpu() {
         return;
     }
     for ppp in SCALES {
         let s = Shot::take(ppp, Mode::Title, false);
-        let inset = s.px(ORIGIN + space::INSET);
+        let inset = s.px(ORIGIN + 1.0 + space::INSET);
         let x = s.px(ORIGIN) + 1..s.px(ORIGIN + W / 2.0);
         let header = s.ink_box(x.clone(), s.header_rows());
         let content = s.ink_box(x, s.px(ORIGIN + size::HEADER) + 1..s.px(ORIGIN + H) - 1);
-        // Inter's left side bearing on "M" is under 1pt.
+        // Figtree's left side bearing on "M" is about 1pt.
         for (what, b) in [("header", header), ("content", content)] {
             assert!(
-                (inset..=inset + s.px(1.0)).contains(&b.0),
+                (inset..=inset + s.px(1.5)).contains(&b.0),
                 "{ppp}x {what} text starts at {} not {inset}",
                 b.0
             );
@@ -196,25 +195,29 @@ fn title_and_content_start_twelve_in() {
 }
 
 #[test]
-fn tabs_start_four_in_with_centred_labels() {
+fn tabs_start_at_the_inset_with_the_active_one_underlined() {
     if !common::gpu() {
         return;
     }
     for ppp in SCALES {
         let s = Shot::take(ppp, Mode::Tabs, false);
-        let y = s.px(ORIGIN + size::HEADER / 2.0);
-        // The active pill is Raised; find where it starts and ends on the header's centre row.
-        let raised: Vec<u32> = (0..s.width)
-            .filter(|&x| near(s.at(x, y), color::raised()))
+        // The underline is the header's last 2pt, in Ink, as wide as the active label.
+        let y = s.px(ORIGIN + size::HEADER);
+        let line: Vec<u32> = (0..s.width)
+            .filter(|&x| near(s.at(x, y), color::ink()))
             .collect();
-        let (x0, x1) = (raised[0], *raised.last().unwrap());
-        assert_eq!(x0, s.px(ORIGIN + space::S4), "{ppp}x pill start");
-        let pill_rows = s.px(ORIGIN + 4.0) + 1..s.px(ORIGIN + 28.0) - 1;
-        let label = s.ink_box(x0..x1 + 1, pill_rows);
-        let (pill_mid, label_mid) = (x0 + x1, label.0 + label.2);
+        let (x0, x1) = (line[0], *line.last().unwrap());
+        assert_eq!(line.len() as u32, x1 - x0 + 1, "{ppp}x one unbroken line");
+        assert_eq!(
+            x0,
+            s.px(ORIGIN + 1.0 + space::INSET),
+            "{ppp}x underline start"
+        );
+        let label = s.ink_box(x0..x1 + 1, s.header_rows());
+        let slack = s.px(1.5);
         assert!(
-            pill_mid.abs_diff(label_mid) <= 2 * s.px(1.0),
-            "{ppp}x label not centred: pill {x0}..{x1}, label {}..{}",
+            label.0 - x0 <= slack && x1 - label.2 <= slack,
+            "{ppp}x underline {x0}..{x1} does not fit its label {}..{}",
             label.0,
             label.2
         );
@@ -280,7 +283,7 @@ fn a_translucent_swatch_shows_the_checkerboard_and_an_opaque_one_is_solid() {
     if !common::gpu() {
         return;
     }
-    // The swatch's middle row, 2pt in from each side of the 24pt swatch.
+    // The swatch's middle row, 2pt in from each side, short of its far edge.
     let row = |rgba: [u8; 4]| {
         let mut fresh = true;
         let mut h = Harness::builder()
@@ -327,7 +330,7 @@ fn icon_buttons_centre_their_glyphs_ink() {
     ] {
         let mut fresh = true;
         let mut h = Harness::builder()
-            .with_size([60.0, 40.0])
+            .with_size([60.0, 60.0])
             .with_pixels_per_point(2.0)
             .wgpu()
             .build_ui(move |ui| {

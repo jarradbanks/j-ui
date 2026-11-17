@@ -1,15 +1,12 @@
-//! Every j-ui widget in every state: `cargo run -p j-ui --example gallery`.
+//! The interactive Component Styles page: `cargo run --example gallery`.
 
 use eframe::egui;
+use egui::{Align, Color32, FontId, Layout, Rect, Ui, UiBuilder, pos2, vec2};
 use j_ui::i18n::{self, Catalog, verbatim};
-use j_ui::panel::Panel;
 use j_ui::theme::{self, icon};
-use j_ui::tokens::{color, size, space};
-use j_ui::widgets::{
-    Breadcrumb, Button, ButtonKind, Checkbox, ColorField, DragField, Dropdown, KeyButton, Keyed,
-    Pills, SectionHeader, Segmented, SelectionCheckbox, Slider, State, Swatches, TextInput,
-    Timecode, Toggle, paint_selection,
-};
+use j_ui::themes;
+use j_ui::tokens::{color, radius, size, space};
+use j_ui::widgets::{Button, Dropdown, NavRow, Segmented};
 
 /// The gallery's demo labels; the widgets' own strings are in j-ui's catalog.
 pub static CATALOG: Catalog = Catalog::new([
@@ -34,404 +31,128 @@ pub static CATALOG: Catalog = Catalog::new([
     include_str!("../i18n/gallery/ko.toml"),
 ]);
 
+/// New page copy uses Catalog's explicit English fallback until translated.
+pub static PAGE_CATALOG: Catalog = Catalog::new([
+    include_str!("../i18n/gallery/page/en.toml"),
+    include_str!("../i18n/gallery/page/es.toml"),
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+]);
+
 macro_rules! tr {
-    ($($args:tt)+) => {
-        j_ui::tr!(CATALOG, $($args)+)
+    ($key:literal) => {
+        PAGE_CATALOG.get($key).unwrap_or_else(|| CATALOG.tr($key))
     };
 }
 
+mod components;
+mod page;
+
 fn main() -> eframe::Result {
     i18n::set_language(i18n::resolve(i18n::SYSTEM));
+    #[cfg(all(debug_assertions, feature = "hot-reload"))]
+    dioxus_devtools::connect_subsecond();
     eframe::run_native(
-        verbatim("j-ui gallery"),
+        tr!("page.component_styles"),
         eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default().with_inner_size([1280.0, 860.0]),
             ..Default::default()
         },
         Box::new(|cc| {
             theme::install(&cc.egui_ctx);
+            #[cfg(all(debug_assertions, feature = "debug-ui"))]
+            j_ui_debug::install_from_env(&cc.egui_ctx, "j-ui-gallery")?;
             Ok(Box::new(Gallery::new()))
         }),
     )
 }
 
-#[derive(Default)]
 pub struct Gallery {
-    tab: usize,
-    many_tabs: usize,
-    text: String,
-    search: String,
-    value: f64,
-    level: f64,
-    choice: usize,
-    colour: [u8; 4],
-    swatch: usize,
-    segment: usize,
-    checked: bool,
-    open: bool,
-    frame: i64,
-    motion: bool,
-    mixed: bool,
-    parent: bool,
+    pub theme: usize,
+    pub style: usize,
+    pub font: usize,
+    pub selected: usize,
+    /// Section rectangles in document coordinates, before scrolling.
+    pub sections: Vec<Rect>,
+    pub scroll: f32,
+    pub scroll_to: Option<usize>,
+    demo: components::Demo,
+    installed_font: (usize, &'static str),
 }
 
 impl Gallery {
     pub fn new() -> Self {
         Self {
-            open: true,
-            motion: true,
-            mixed: true,
-            parent: true,
-            level: 0.5,
-            colour: [0x2F, 0x6F, 0xEB, 0xFF],
-            frame: 30 * 72 + 8,
-            ..Self::default()
+            theme: 0,
+            style: 2,
+            font: 0,
+            selected: 0,
+            sections: Vec::new(),
+            scroll: 0.0,
+            scroll_to: None,
+            demo: components::Demo::new(),
+            installed_font: (0, i18n::language()),
         }
+    }
+}
+
+impl Default for Gallery {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
 impl eframe::App for Gallery {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        #[cfg(all(debug_assertions, feature = "hot-reload"))]
+        subsecond::call(|| gallery(ui, self));
+        #[cfg(not(all(debug_assertions, feature = "hot-reload")))]
         gallery(ui, self);
     }
 }
 
-const STATES: [(i18n::Label, State); 5] = [
-    (|| tr!("state.default"), State::Default),
-    (|| tr!("state.hover"), State::Hover),
-    (|| tr!("state.focus"), State::Focus),
-    (|| tr!("state.pressed"), State::Pressed),
-    (|| tr!("state.disabled"), State::Disabled),
-];
-
-/// The whole gallery, also rendered by the snapshot test.
-pub fn gallery(ui: &mut egui::Ui, g: &mut Gallery) {
-    ui.painter()
-        .rect_filled(ui.ctx().content_rect(), 0.0, color::ground());
-    let area = ui.ctx().content_rect().shrink(space::GUTTER);
-    ui.scope_builder(egui::UiBuilder::new().max_rect(area), |ui| {
-        ui.horizontal_top(|ui| {
-            ui.spacing_mut().item_spacing.x = space::GUTTER;
-            let w = ui.available_width();
-            let h = ui.available_height();
-            ui.allocate_ui(egui::vec2(w - 360.0 - space::GUTTER, h), |ui| {
-                let mut tab = g.tab;
-                let tabs = [
-                    tr!("panel.widgets"),
-                    tr!("panel.effects"),
-                    tr!("panel.text"),
-                ];
-                Panel::tabbed(&tabs, &mut tab)
-                    .focused(true)
-                    .actions(&[
-                        (icon::PLUS, tr!("panel.add")),
-                        (icon::ELLIPSIS, tr!("panel.more")),
-                    ])
-                    .show(ui, |ui| {
-                        egui::ScrollArea::vertical().show(ui, |ui| {
-                            if g.tab == 1 {
-                                selection(ui, g);
-                            } else {
-                                states(ui, g);
-                            }
-                        });
-                    });
-                g.tab = tab;
-            });
-            ui.vertical(|ui| {
-                ui.spacing_mut().item_spacing.y = space::GUTTER;
-                ui.allocate_ui(egui::vec2(360.0, 200.0), |ui| {
-                    Panel::titled(tr!("panel.inspector")).show(ui, |ui| inspector(ui, g));
-                });
-                ui.allocate_ui(egui::vec2(360.0, 120.0), |ui| {
-                    let labels = [
-                        tr!("panel.source"),
-                        tr!("panel.program"),
-                        tr!("panel.audio"),
-                        tr!("panel.markers"),
-                        tr!("panel.history"),
-                        tr!("panel.captions"),
-                    ];
-                    Panel::tabbed(&labels, &mut g.many_tabs).show(ui, |ui| {
-                        ui.label(tr!("panel.overflow"));
-                    });
-                });
-                ui.allocate_ui(egui::vec2(360.0, ui.available_height()), |ui| {
-                    Panel::titled(tr!("panel.type_and_colour")).show(ui, type_and_colour);
-                });
-            });
-        });
+/// The actual window content, shared with the rendered gallery tests.
+pub fn gallery(ui: &mut Ui, gallery: &mut Gallery) {
+    let presentation = [
+        theme::ComponentStyle::Current,
+        theme::ComponentStyle::Line,
+        theme::ComponentStyle::Soft,
+    ][gallery.style];
+    theme::with_component_style(presentation, || {
+        let palette = if gallery.theme == 0 {
+            themes::DARK
+        } else {
+            themes::LIGHT
+        };
+        themes::apply(ui.ctx(), &palette);
+        let mut style = theme::style();
+        style.visuals = theme::visuals_with(&palette);
+        ui.set_style(style);
+        page::show(ui, gallery);
     });
-}
-
-fn states(ui: &mut egui::Ui, g: &mut Gallery) {
-    egui::Grid::new("states")
-        .spacing([space::S16, space::S12])
-        .show(ui, |ui| {
-            ui.label("");
-            for (name, _) in STATES {
-                ui.label(egui::RichText::new(name()).color(color::ink_3()));
+    if (gallery.font, i18n::language()) != gallery.installed_font {
+        let mut fonts = theme::fonts(i18n::language());
+        if gallery.font == 1 {
+            for chain in fonts.families.values_mut() {
+                chain.sort_by_key(|name| !name.starts_with("inter"));
             }
-            ui.label(egui::RichText::new(tr!("state.loading_error")).color(color::ink_3()));
-            ui.end_row();
-
-            for kind in [
-                ButtonKind::Primary,
-                ButtonKind::Secondary,
-                ButtonKind::Ghost,
-                ButtonKind::Destructive,
-            ] {
-                ui.label(match kind {
-                    ButtonKind::Primary => tr!("row.primary"),
-                    ButtonKind::Secondary => tr!("row.secondary"),
-                    ButtonKind::Ghost => tr!("row.ghost"),
-                    ButtonKind::Destructive => tr!("row.destructive"),
-                });
-                let label = if kind == ButtonKind::Destructive {
-                    tr!("demo.delete")
-                } else {
-                    tr!("demo.export")
-                };
-                for (_, s) in STATES {
-                    ui.add(Button::new(kind, label).state(s));
-                }
-                ui.add(
-                    Button::new(kind, label)
-                        .with_icon(icon::CHECK)
-                        .loading(true),
-                );
-                ui.end_row();
-            }
-
-            ui.label(tr!("row.icon"));
-            for (_, s) in STATES {
-                ui.add(Button::icon(icon::PLUS, tr!("panel.add")).state(s));
-            }
-            ui.add(Button::icon(icon::PLUS, tr!("panel.add")).on(true));
-            ui.end_row();
-
-            ui.label(tr!("row.input"));
-            for (_, s) in STATES {
-                ui.add(
-                    TextInput::new(&mut g.text)
-                        .prefix(tr!("demo.width_prefix"))
-                        .hint("1920")
-                        .width(120.0)
-                        .state(s),
-                );
-            }
-            ui.add(
-                TextInput::new(&mut g.text)
-                    .prefix(tr!("demo.width_prefix"))
-                    .hint("1920")
-                    .width(120.0)
-                    .error(Some(tr!("demo.min_error"))),
-            );
-            ui.end_row();
-
-            ui.label(tr!("row.search"));
-            for (_, s) in STATES {
-                ui.add(TextInput::search(&mut g.search).width(120.0).state(s));
-            }
-            ui.end_row();
-
-            ui.label(tr!("row.numeric"));
-            for (_, s) in STATES {
-                ui.add(DragField::new(&mut g.value).prefix(verbatim("X")).state(s));
-            }
-            ui.end_row();
-
-            ui.label(tr!("row.dropdown"));
-            let options = ["1/2", tr!("demo.full"), "1/4"];
-            for (_, s) in STATES {
-                ui.add(Dropdown::new(&mut g.choice, &options).width(96.0).state(s));
-            }
-            ui.end_row();
-
-            ui.label(tr!("row.colour"));
-            for (_, s) in STATES {
-                ui.allocate_ui(egui::vec2(120.0, size::CONTROL), |ui| {
-                    ui.add(ColorField::new(&mut g.colour, tr!("demo.fill")).state(s));
-                });
-            }
-            // Translucent: the swatch shows the checkerboard.
-            ui.allocate_ui(egui::vec2(120.0, size::CONTROL), |ui| {
-                let mut half = [g.colour[0], g.colour[1], g.colour[2], 0x80];
-                ui.add(ColorField::new(&mut half, tr!("demo.fill")));
-            });
-            ui.end_row();
-
-            ui.label(tr!("row.swatches"));
-            let names = [
-                tr!("demo.violet"),
-                tr!("demo.plum"),
-                tr!("demo.ochre"),
-                tr!("demo.green"),
-            ];
-            for (_, s) in STATES {
-                ui.add(Swatches::new(&mut g.swatch, &color::CLIPS, &names).state(s));
-            }
-            ui.end_row();
-
-            ui.label(tr!("row.segmented"));
-            let segments = [tr!("demo.fit"), tr!("demo.fill"), "1:1"];
-            for (_, s) in STATES {
-                ui.add(Segmented::new(&mut g.segment, &segments).state(s));
-            }
-            ui.end_row();
-
-            ui.label(tr!("row.checkbox"));
-            for (_, s) in STATES {
-                let mut on = g.checked || s == State::Pressed;
-                ui.add(Checkbox::new(&mut on, tr!("demo.snap")).state(s));
-            }
-            ui.add(Checkbox::new(&mut g.checked, tr!("demo.live")));
-            ui.end_row();
-
-            ui.label(tr!("row.slider"));
-            for (_, s) in STATES {
-                ui.allocate_ui(egui::vec2(120.0, size::CONTROL), |ui| {
-                    ui.add(Slider::new(&mut g.level, 0.0..=1.0, tr!("demo.scale")).state(s));
-                });
-            }
-            ui.allocate_ui(egui::vec2(120.0, size::CONTROL), |ui| {
-                ui.add(Slider::new(&mut g.value, -100.0..=100.0, tr!("demo.scale")).centred(true));
-            });
-            ui.end_row();
-
-            ui.label(tr!("row.keyframe"));
-            for (_, s) in STATES {
-                ui.horizontal(|ui| {
-                    ui.spacing_mut().item_spacing.x = 2.0;
-                    ui.add(Button::icon(icon::UNDO, tr!("demo.reset")).small().state(s));
-                    ui.add(KeyButton::previous(tr!("demo.previous")).state(s));
-                    ui.add(KeyButton::next(tr!("demo.next")).state(s));
-                    ui.add(KeyButton::diamond(Keyed::Static, tr!("demo.animate")).state(s));
-                });
-            }
-            ui.horizontal(|ui| {
-                ui.spacing_mut().item_spacing.x = 2.0;
-                ui.add(KeyButton::diamond(Keyed::Animated, tr!("demo.animate")));
-                ui.add(KeyButton::diamond(Keyed::Here, tr!("demo.animate")));
-            });
-            ui.end_row();
-
-            ui.label(tr!("row.section"));
-            for (_, s) in STATES {
-                ui.allocate_ui(egui::vec2(120.0, size::HEADER), |ui| {
-                    let mut open = g.open;
-                    ui.add(SectionHeader::new(tr!("demo.transform"), &mut open).state(s));
-                });
-            }
-            ui.end_row();
-        });
-}
-
-fn inspector(ui: &mut egui::Ui, g: &mut Gallery) {
-    ui.add(SectionHeader::new(tr!("demo.transform"), &mut g.open));
-    if g.open {
-        ui.horizontal(|ui| {
-            ui.spacing_mut().item_spacing.x = space::S4;
-            ui.allocate_ui_with_layout(
-                egui::vec2(size::INSPECTOR_LABEL, size::CONTROL),
-                egui::Layout::left_to_right(egui::Align::Center),
-                |ui| ui.label(egui::RichText::new(tr!("demo.position")).color(color::ink_2())),
-            );
-            ui.add(DragField::new(&mut g.value).prefix(verbatim("X")));
-            ui.add(DragField::new(&mut g.value).prefix(verbatim("Y")));
-        });
-        ui.horizontal(|ui| {
-            ui.spacing_mut().item_spacing.x = space::S4;
-            ui.allocate_ui_with_layout(
-                egui::vec2(size::INSPECTOR_LABEL, size::CONTROL),
-                egui::Layout::left_to_right(egui::Align::Center),
-                |ui| ui.label(egui::RichText::new(tr!("demo.scale")).color(color::ink_2())),
-            );
-            let mut pct = g.level * 400.0;
-            ui.add(DragField::new(&mut pct).suffix("%").width(64.0));
-            ui.add(Slider::new(&mut pct, 0.0..=400.0, tr!("demo.scale")));
-            g.level = pct / 400.0;
-        });
-    }
-    ui.horizontal(|ui| {
-        ui.add(Timecode::new(g.frame, 30));
-        ui.add(Timecode::new(g.frame, 30).small());
-        if ui.add(Button::secondary(tr!("demo.plus_second"))).clicked() {
-            g.frame += 30;
         }
-    });
-}
-
-fn type_and_colour(ui: &mut egui::Ui) {
-    ui.label(egui::RichText::new(tr!("type.display")).font(theme::display()));
-    ui.label(egui::RichText::new(tr!("type.headline")).font(theme::headline()));
-    ui.label(egui::RichText::new(tr!("type.title")).font(theme::title()));
-    ui.label(egui::RichText::new(tr!("type.body_strong")).font(theme::body_strong()));
-    ui.label(tr!("type.body"));
-    ui.label(
-        egui::RichText::new(tr!("type.small"))
-            .font(theme::small())
-            .color(color::ink_3()),
-    );
-    ui.add_space(space::S8);
-    ui.horizontal_wrapped(|ui| {
-        ui.spacing_mut().item_spacing = egui::vec2(space::S4, space::S4);
-        let names = [
-            tr!("clip.video"),
-            tr!("clip.title"),
-            tr!("clip.still"),
-            tr!("clip.audio"),
-        ];
-        for (clip, name) in color::CLIPS.into_iter().zip(names) {
-            egui::Frame::new()
-                .fill(clip)
-                .corner_radius(4)
-                .inner_margin(egui::Margin::symmetric(6, 4))
-                .show(ui, |ui| {
-                    ui.label(
-                        egui::RichText::new(name)
-                            .font(theme::body_strong())
-                            .color(color::ink()),
-                    );
-                });
-        }
-    });
-}
-
-/// Shared selection and reduced-motion examples live on the Effects tab.
-fn selection(ui: &mut egui::Ui, g: &mut Gallery) {
-    ui.add(Checkbox::new(&mut g.motion, tr!("demo.animate")));
-    j_ui::motion::set_enabled(ui.ctx(), g.motion);
-    ui.label(tr!("row.toggle"));
-    ui.add(Toggle::new(&mut g.checked, tr!("demo.live")));
-    ui.label(tr!("row.pills"));
-    ui.add(Pills::new(&mut g.segment, &[tr!("demo.fit"), tr!("demo.fill")]).height(36.0));
-    ui.label(tr!("row.breadcrumb"));
-    let title = if g.parent {
-        tr!("panel.source")
-    } else {
-        tr!("clip.title")
-    };
-    if ui
-        .add(Breadcrumb::new(tr!("demo.previous"), title).height(36.0))
-        .clicked()
-    {
-        g.parent = !g.parent;
+        ui.ctx().set_fonts(fonts);
+        gallery.installed_font = (gallery.font, i18n::language());
     }
-    ui.label(tr!("row.selection"));
-    if ui
-        .add(SelectionCheckbox::new(&mut g.checked, tr!("demo.snap")).mixed(g.mixed))
-        .changed()
-    {
-        g.mixed = false;
-    }
-    let (tile, _) = ui.allocate_exact_size(egui::Vec2::splat(20.0), egui::Sense::hover());
-    paint_selection(ui, tile, g.checked, g.mixed);
-    let t = j_ui::motion::toggle(ui.ctx(), ui.id().with("demo-motion"), g.checked);
-    let (track, _) = ui.allocate_exact_size(egui::vec2(160.0, 24.0), egui::Sense::hover());
-    ui.painter().circle_filled(
-        track.left_center() + egui::vec2(8.0 + 144.0 * t, 0.0),
-        8.0,
-        color::blue(),
-    );
 }

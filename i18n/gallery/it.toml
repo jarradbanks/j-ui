@@ -9,6 +9,7 @@ disabled = "Disattivato"
 loading_error = "Caricamento / Errore"
 
 [panel]
+components = "Componenti"
 widgets = "Widget"
 effects = "Effetti"
 text = "Testo"
@@ -21,7 +22,7 @@ audio = "Audio"
 markers = "Marcatori"
 history = "Cronologia"
 captions = "Didascalie"
-overflow = "Le schede sotto i 64 px passano nel menu a freccia."
+overflow = "Le schede che non entrano passano al menu a freccia."
 type_and_colour = "Tipografia e colore"
 
 [row]
@@ -48,6 +49,8 @@ slider = "Cursore"
 keyframe = "Fotogramma chiave"
 
 [demo]
+no_matches = "Nessun elemento corrispondente"
+dismiss = "Chiudi"
 delete = "Elimina"
 export = "Esporta"
 width_prefix = "L"
@@ -71,12 +74,12 @@ ochre = "Ocra"
 green = "Verde"
 
 [type]
-display = "Display 22"
-headline = "Titolo principale 16"
-title = "Titolo 14"
-body_strong = "Corpo in grassetto 12"
-body = "Corpo 12 · 0123456789 resta fermo"
-small = "Piccolo 10 · suggerimento scelta rapida"
+display = "Display 28"
+headline = "Titolo principale 20"
+title = "Titolo 16"
+body_strong = "Corpo in grassetto 14"
+body = "Corpo 14, 0123456789 resta fermo"
+small = "Piccolo 12, suggerimento scelta rapida"
 
 [clip]
 video = "Video"
