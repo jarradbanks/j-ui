@@ -1383,12 +1383,16 @@ impl<'a> MenuRow<'a> {
         }
     }
 
-    /// A suggestion with no check slot, its `hit` bytes drawn as the matched text.
-    pub(crate) fn suggestion(label: &'a str, hit: std::ops::Range<usize>) -> Self {
+    /// A matched suggestion; the current choice has a trailing check.
+    pub(crate) fn suggestion(label: &'a str, hit: std::ops::Range<usize>, selected: bool) -> Self {
         Self {
-            slot: CheckSlot::None,
+            slot: if selected {
+                CheckSlot::Trailing
+            } else {
+                CheckSlot::None
+            },
             hit,
-            ..Self::new(label, false)
+            ..Self::new(label, selected)
         }
     }
 

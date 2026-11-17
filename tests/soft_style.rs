@@ -319,7 +319,8 @@ fn autocomplete_empty_escape_reopen_and_short_viewport() {
         h.key_press(Key::Enter);
         h.run();
         assert_eq!(h.state(), "zzz");
-        h.get_by_role(egui::accesskit::Role::TextInput).focus();
+        h.get_by_role(egui::accesskit::Role::EditableComboBox)
+            .focus();
         h.run();
         h.key_press_modifiers(egui::Modifiers::COMMAND, Key::A);
         h.event(egui::Event::Text("in".into()));
@@ -328,7 +329,7 @@ fn autocomplete_empty_escape_reopen_and_short_viewport() {
         h.key_press(Key::Escape);
         h.run();
         assert!(
-            h.get_by_role(egui::accesskit::Role::TextInput)
+            h.get_by_role(egui::accesskit::Role::EditableComboBox)
                 .accesskit_node()
                 .is_focused(),
             "Escape keeps focus"

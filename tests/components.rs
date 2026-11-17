@@ -682,7 +682,7 @@ fn autocomplete_filters_moves_and_picks_from_the_keyboard() {
         h.query_by_label("JetBrains Mono").is_none(),
         "picking closes"
     );
-    let field = h.get_by_role(egui::accesskit::Role::TextInput);
+    let field = h.get_by_role(egui::accesskit::Role::EditableComboBox);
     assert!(
         field.accesskit_node().is_focused(),
         "focus stays in the field"
@@ -692,13 +692,15 @@ fn autocomplete_filters_moves_and_picks_from_the_keyboard() {
     *h.state_mut() = String::from("pl");
     h.key_press(egui::Key::Tab);
     h.run();
-    h.get_by_role(egui::accesskit::Role::TextInput).click();
+    h.get_by_role(egui::accesskit::Role::EditableComboBox)
+        .click();
     h.run();
     assert!(h.query_by_label("IBM Plex Sans").is_some(), "a click opens");
     h.key_press(egui::Key::Tab);
     h.run();
     assert!(h.query_by_label("IBM Plex Sans").is_none(), "Tab closes");
-    h.get_by_role(egui::accesskit::Role::TextInput).click();
+    h.get_by_role(egui::accesskit::Role::EditableComboBox)
+        .click();
     h.run();
     h.get_by_label("IBM Plex Sans").click();
     h.run();

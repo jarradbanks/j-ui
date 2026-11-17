@@ -43,6 +43,9 @@ Reusable additions across the complete branch are `Autocomplete`, `Card`, `Colum
 `NavRow` and `RadioGroup`. This finishing commit also adds `theme::text`,
 `Toggle::show_label` and the semantic selection-fill helper.
 
+The [autocomplete integration guide](autocomplete.md) shows how apps map a
+picked option to their own IDs without applying draft search text.
+
 The native gallery now reproduces the reference page itself: its 17 sections,
 sticky rail and toolbar, responsive grids, sample content and live style/font/theme
 choices. See [the gallery implementation and evidence](gallery-page.md) for the
