@@ -65,6 +65,8 @@ fn switching_to_a_long_dialog_settles_the_footer_and_preserves_dismissal() {
         let notices = "Third-party licence text.\n".repeat(200);
         let mut h = Harness::builder()
             .with_size([1280.0, 720.0])
+            // Layout and the 120ms focus transition both settle before checking the footer.
+            .with_max_steps(8)
             .build_ui_state(
                 move |ui, stage: &mut usize| {
                     if common::install_theme(ui, &mut fresh) || *stage == 2 {

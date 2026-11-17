@@ -44,13 +44,17 @@ Reusable additions across the complete branch are `Autocomplete`, `Card`, `Colum
 `Toggle::show_label` and the semantic selection-fill helper.
 
 The gallery's Components tab exercises the additions, including opening and
-dismissing a toast. All new gallery text uses the existing localization catalog;
+dismissing a toast. The Widgets matrix splits its columns into vertical groups
+when the available width is too narrow. Disabled and Loading / Error stay
+reachable through vertical scrolling. The Inspector reserves its measured
+content height, keeping the entire +1s button inside its body. All new gallery text uses the existing localization catalog;
 all 19 gallery locales include the new keys and corrected type-scale labels.
 
 ## Render comparison
 
 The committed HTML was opened through Orca's browser and captured with Chromium
-at a controlled device scale of 1. Native renders use egui's WGPU harness with
+at a controlled device scale of 1 with reduced motion, avoiding intermediate
+theme-transition colors in the reference captures. Native renders use egui's WGPU harness with
 lavapipe, after the font-install frame. The native fixture uses the same component
 arrangement and content as the reference at 1280 points wide.
 
@@ -83,9 +87,11 @@ pixel-identical Chromium rendering:
 - Chromium and egui use different font rasterizers and fractional positioning.
   The native fixture rounds panel/row geometry to physical pixels; cumulative
   panel positions can differ by a few pixels over the full 2980-point page.
-  Figtree text metrics and line breaking can differ slightly. The font tests keep
-  visual bounds within 0.5 physical pixels of center and raster bounds within 1,
-  unchanged by artificial font offsets.
+  Figtree text metrics and line breaking can differ slightly. Painted control
+  labels now center their visible ink. Rendered checks cover 15 labels across
+  buttons, selections, menus, navigation, panels, badges and notice actions:
+  visual bounds stay within 0.5 physical pixels of center, and raster bounds
+  within 1. TextInput separately verifies stability under artificial font offsets.
 - Native icons retain the shared Lucide font and visible-glyph centering. The
   prototype uses inline SVGs. In particular, the empty-state folder uses the
   existing font stroke instead of the prototype's thinner 1.5 SVG stroke, and
@@ -95,17 +101,33 @@ pixel-identical Chromium rendering:
 - Rules remain one physical pixel at fractional DPI, following the library's
   existing rendering contract. A CSS one-pixel border becomes 1.5 physical pixels
   at 150% browser scaling.
-- The reference specifies only Dark and Light. High Contrast uses Raised instead
-  of its bright Border token for filled controls, and retains outlines on fields
-  and off switches. This keeps labels and switch knobs visible. Disabled states
-  not specified in the HTML retain the library's semantic disabled treatment.
-- Native color transitions follow existing widget behavior; button hover fades
-  use 120ms. The HTML applies CSS transitions to more component classes. The
-  settled states are the comparison target.
+- The reference specifies only Dark and Light. High Contrast adds panel, card
+  and control outlines and uses an accessible middle-tone selection fill.
+  Disabled states not specified in the HTML retain the library's semantic
+  disabled treatment.
 - The reference's Current/Line choices, font-picker demo and Token Map are
   reference-page composition. This change implements the default Soft library
   profile; it does not add alternative density profiles or a token-map widget.
   The native fixture omits the Token Map appendix.
+
+## Independent validation corrections
+
+The review of `7adb63f` found fixable text-placement, gallery and High Contrast
+regressions, plus segment-width and transition differences. They are corrected
+in the shared implementation:
+
+| Finding | Correction and proof |
+| --- | --- |
+| Painted labels sat low | `text_pos`, `paint_left` and `paint_text` center visible glyph ink. Buttons, segments, pills, checkbox/radio/toggle labels, dropdown/menu values, panel titles, tabs, navigation and badges use the shared path. The 15-label geometry/pixel check passes at 1280×800 and 1920×1080 at 100% and 150%; toast/banner action ink is within 1 point of its message. |
+| Inspector and matrix clipping | Explicit Inspector spacing and measured height keep +1s fully visible and clickable. Responsive matrix groups keep all states reachable. GPU tests assert the button lies inside its paint clip and the Disabled and Loading / Error columns contain no horizontally clipped text at both widths/scales. |
+| High Contrast separation | A semantic outline restores panel/card/control edges. Selected fills use `#626262`: at least 3:1 against Panel and Raised, and 4.5:1 for text. Pixel checks cover panel boundaries, hovered button outlines and selected button/segment/menu/rail fills at both scales. |
+| Segment width | Round each segment's natural width instead of rounding up. Grid/List/Detail measures 179 points at 100% (within one point at 150%). |
+| Missing transitions | Shared 120ms CSS-ease color interpolation covers fields and focus rings, segments/pills, tabs, rail/menu/table rows, checkboxes/radio/toggles and buttons. Tests render intermediate and settled colors, exercise reversal and reduced motion, and confirm the CSS easing midpoint. |
+
+[The new polish tests](../tests/soft_fixes.rs) measure painted ink and rendered
+colors rather than relying only on accessible control rectangles. Gallery proof:
+[1280 state groups](../tests/snapshots/gallery_states_1280_1x.png),
+[1920 state matrix](../tests/snapshots/gallery_states_1920_1x.png).
 
 ## Verification
 
@@ -129,7 +151,10 @@ python3 /mnt/c/Users/Jarrad/.agents/skills/code-cleanup/style-check.py
 git diff --check
 ```
 
-Final command results are recorded in
+Formatting, build, strict Clippy, the style checker and all 157 tests passed;
+0 tests failed or were ignored. GPU tests were required, snapshots were refreshed
+and the final run compared them without update mode. Native and HTML polish
+checks passed. Final command output is recorded in
 [verification.txt](screenshots/soft-restyle/verification.txt).
 
 Consumer pins were inspected before changing the public styling surface: jvid

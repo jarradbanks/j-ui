@@ -138,10 +138,8 @@ impl Widget for SelectionCheckbox<'_> {
                 Stroke::new(1.0, color::light_blue()),
             );
         }
-        if l.focus {
-            let circle = Rect::from_center_size(rect.center(), Vec2::splat(SELECTION_DIAMETER));
-            paint_focus(ui, circle, ROUND);
-        }
+        let circle = Rect::from_center_size(rect.center(), Vec2::splat(SELECTION_DIAMETER));
+        paint_focus(ui, circle, ROUND, response.id, l.focus);
         response.on_hover_text(self.label)
     }
 }
@@ -214,6 +212,7 @@ impl Widget for Toggle<'_> {
             color::border_strong()
         };
         let half = rect.height() / 2.0;
+        let fill = motion::color(ui.ctx(), response.id.with("fill"), fill);
         ui.painter().rect_filled(rect, half, fill);
         if contrast_outline && !*self.value {
             ui.painter()
@@ -237,7 +236,8 @@ impl Widget for Toggle<'_> {
             } else {
                 color::ink()
             };
-            ui.painter().text(
+            paint_text(
+                ui,
                 pos2(rect.right() + space::S8, row.center().y),
                 Align2::LEFT_CENTER,
                 self.label,
@@ -245,9 +245,7 @@ impl Widget for Toggle<'_> {
                 ink,
             );
         }
-        if l.focus {
-            paint_focus(ui, rect, ROUND);
-        }
+        paint_focus(ui, rect, ROUND, response.id, l.focus);
         response
     }
 }
@@ -311,8 +309,14 @@ impl Widget for RadioGroup<'_> {
                     _ if l.focus => (color::light_blue(), color::ink()),
                     _ => (color::border_strong(), color::ink()),
                 };
+                let edge = if on && !l.disabled {
+                    color::blue()
+                } else {
+                    edge
+                };
+                let edge = motion::color(ui.ctx(), response.id.with("edge"), edge);
                 if on {
-                    let ring = if l.disabled { edge } else { color::blue() };
+                    let ring = edge;
                     ui.painter().circle_filled(center, r, ring);
                     // The ring is 1/3.5 of the diameter wide; the rest is the white dot.
                     let dot = r - SELECTION_DIAMETER / 3.5;
@@ -322,20 +326,19 @@ impl Widget for RadioGroup<'_> {
                     ui.painter()
                         .circle_stroke(center, r - stroke.width / 2.0, stroke);
                 }
-                ui.painter().text(
+                paint_text(
+                    ui,
                     pos2(
                         rect.left() + SELECTION_DIAMETER + space::S8,
                         rect.center().y,
                     ),
                     Align2::LEFT_CENTER,
-                    *option,
+                    option,
                     theme::body(),
                     ink,
                 );
-                if l.focus {
-                    let circle = Rect::from_center_size(center, Vec2::splat(SELECTION_DIAMETER));
-                    paint_focus(ui, circle, ROUND);
-                }
+                let circle = Rect::from_center_size(center, Vec2::splat(SELECTION_DIAMETER));
+                paint_focus(ui, circle, ROUND, response.id, l.focus);
             }
             changed
         });
@@ -387,7 +390,8 @@ impl Widget for Breadcrumb<'_> {
         } else {
             color::ink_3()
         };
-        ui.painter().text(
+        paint_text(
+            ui,
             row.left_center(),
             Align2::LEFT_CENTER,
             self.parent,
@@ -399,8 +403,8 @@ impl Widget for Breadcrumb<'_> {
         let x = chevron.x + size::ICON / 2.0 + space::S4;
         let room = (row.right() - x).max(0.0);
         let title = fit_text(ui, self.title, theme::body_strong(), color::ink(), room);
-        let top = y - title.size().y / 2.0;
-        paint_fit(ui, pos2(x, top), title, color::ink());
+        let pos = text_pos(&title, x, y);
+        paint_fit(ui, pos, title, color::ink());
         response
     }
 }

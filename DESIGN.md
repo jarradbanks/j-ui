@@ -18,8 +18,8 @@ geometry. Consumer font and density adapters remain independent.
 | Display / headline / title / body / small | 28 / 20 / 16 / 14 / 12 |
 
 Figtree uses weights 400, 500 and 600. SemiBold headings have -0.01em tracking.
-Use `theme::text` for paragraph leading and headings; custom control labels keep
-their centred single-line layout. Figtree has frozen tabular figures; Inter and
+Use `theme::text` for paragraph leading and headings. Painted control labels
+center their visible ink, including when a font has asymmetric line metrics. Figtree has frozen tabular figures; Inter and
 locale-specific Noto fonts provide the existing script fallbacks.
 
 Panels and cards have no visible border. Fields use Ground, secondary buttons
@@ -34,9 +34,14 @@ choose Ink 4 directly instead of applying a second opacity fade.
 
 Dark and Light use the reference's palette unchanged. The reference does not
 specify High Contrast. Its border color is too bright for filled controls, so
-`Palette::selection_fill` uses Raised when Ink on Border would fall below 4.5:1.
-High Contrast fields and off switches retain an outline, and disabled labels and
-switch knobs remain visible.
+`Palette::selection_fill` derives a middle tone when Ink on Border would fall
+below 4.5:1. In High Contrast the resulting fill is `#626262`, with at least 3:1
+contrast against Panel and Raised and at least 4.5:1 for its text. Panels, cards
+and controls use the semantic surface outline to preserve their boundaries.
+
+Control colors and focus rings transition over 120ms using CSS ease. Interrupted
+transitions continue from the current color; reduced motion applies the target
+immediately.
 
 `tests/components.rs` renders the reference's component arrangement;
 `tests/soft_style.rs` checks state colors, geometry, typography and keyboard

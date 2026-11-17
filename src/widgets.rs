@@ -15,7 +15,7 @@ use egui::{
 use crate::i18n::CATALOG;
 use crate::theme::{self, hairline, icon};
 use crate::tokens::{color, radius, size, space};
-use crate::tr;
+use crate::{motion, tr};
 
 mod autocomplete;
 mod content;
@@ -74,18 +74,9 @@ fn look(response: &Response, pinned: State) -> Look {
     resolved
 }
 
-/// Fades a colour towards its hover value over 120ms.
 fn hover_fade(ui: &Ui, id: Id, hover: bool, rest: Color32, hovered: Color32) -> Color32 {
-    // No fade when the app turns animation off, as Reduce Motion does.
-    let time = if ui.style().animation_time == 0.0 {
-        0.0
-    } else {
-        0.12
-    };
-    let t = ui
-        .ctx()
-        .animate_bool_with_time(id.with("hover"), hover, time);
-    rest.lerp_to_gamma(hovered, t)
+    let target = if hover { hovered } else { rest };
+    motion::color(ui.ctx(), id.with("hover"), target)
 }
 
 /// Paints icon `glyph` with its ink, not its line box, centred on `center`: a Lucide glyph's
@@ -111,10 +102,21 @@ pub fn focus_ring(rect: Rect, corner: u8) -> Shape {
 
 /// Paints [`focus_ring`] up to its width past the parent's clip, so a control at a clipped
 /// edge keeps its whole ring.
-fn paint_focus(ui: &Ui, rect: Rect, corner: u8) {
+fn paint_focus(ui: &Ui, rect: Rect, corner: u8, id: Id, focused: bool) {
+    let ink = if focused {
+        color::blue_soft()
+    } else {
+        Color32::TRANSPARENT
+    };
+    let ink = motion::color(ui.ctx(), id.with("focus-ring"), ink);
     let mut painter = ui.painter().clone();
     painter.set_clip_rect(ui.clip_rect().expand(RING + 1.0 / ui.pixels_per_point()));
-    painter.add(focus_ring(rect, corner));
+    painter.rect_stroke(
+        rect,
+        CornerRadius::same(corner),
+        Stroke::new(RING, ink),
+        StrokeKind::Outside,
+    );
 }
 
 /// Adds `widget` centred in `rect`, inside a control that has already allocated it. Unlike
@@ -373,12 +375,20 @@ impl Widget for Button<'_> {
             ButtonKind::Primary if l.pressed => (color::BLUE_PRESSED, color::WHITE),
             ButtonKind::Primary => {
                 let lit = l.hover || l.focus;
-                let fill = hover_fade(ui, id, lit, color::blue(), color::blue_hover());
+                let fill = if lit {
+                    color::blue_hover()
+                } else {
+                    color::blue()
+                };
                 (fill, color::WHITE)
             }
             ButtonKind::Secondary => {
                 let lit = l.hover || l.pressed;
-                let fill = hover_fade(ui, id, lit, color::selection_fill(), color::raised());
+                let fill = if lit {
+                    color::raised()
+                } else {
+                    color::selection_fill()
+                };
                 (fill, color::ink())
             }
             ButtonKind::Destructive => (color::red_soft(), color::red()),
@@ -389,7 +399,7 @@ impl Widget for Button<'_> {
                 } else {
                     Color32::TRANSPARENT
                 };
-                let fill = hover_fade(ui, id, lit, rest, color::raised());
+                let fill = if lit { color::raised() } else { rest };
                 let ink = if self.on {
                     color::ink()
                 } else {
@@ -399,6 +409,8 @@ impl Widget for Button<'_> {
             }
         };
         let ink = self.ink.filter(|_| !l.disabled).unwrap_or(ink);
+        let ink = motion::color(ui.ctx(), id.with("ink"), ink);
+        let fill = motion::color(ui.ctx(), id.with("fill"), fill);
         let corner = if self.small {
             radius::SMALL
         } else {
@@ -406,6 +418,8 @@ impl Widget for Button<'_> {
         };
         ui.painter()
             .rect_filled(rect, CornerRadius::same(corner), fill);
+        ui.painter()
+            .add(border(ui, rect, corner, color::surface_outline()));
         let mut x = if has_label {
             rect.left() + space::BUTTON_PAD + 1.0 + pad
         } else {
@@ -422,7 +436,7 @@ impl Widget for Button<'_> {
         }
         if has_label {
             ui.painter().galley_with_override_text_color(
-                pos2(x, rect.center().y - galley.size().y / 2.0),
+                text_pos(&galley, x, rect.center().y),
                 galley,
                 ink,
             );
@@ -433,7 +447,7 @@ impl Widget for Button<'_> {
 
 /// Paints a field's frame into `slot`: a borderless Ground fill, a Red border on error, and
 /// on focus a Blue border with the focus ring.
-fn paint_field(ui: &Ui, slot: egui::layers::ShapeIdx, rect: Rect, l: Look, error: bool) {
+fn paint_field(ui: &Ui, slot: egui::layers::ShapeIdx, rect: Rect, id: Id, l: Look, error: bool) {
     let focus = l.focus && !l.disabled;
     let mut shapes = vec![Shape::rect_filled(
         rect,
@@ -447,11 +461,14 @@ fn paint_field(ui: &Ui, slot: egui::layers::ShapeIdx, rect: Rect, l: Look, error
         _ if color::selection_fill() != color::border() => Some(color::border()),
         _ => None,
     };
-    shapes.extend(stroke.map(|c| border(ui, rect, radius::CONTROL, c)));
+    let edge = motion::color(
+        ui.ctx(),
+        id.with("edge"),
+        stroke.unwrap_or(Color32::TRANSPARENT),
+    );
+    shapes.push(border(ui, rect, radius::CONTROL, edge));
     ui.painter().set(slot, Shape::Vec(shapes));
-    if focus {
-        paint_focus(ui, rect, radius::CONTROL);
-    }
+    paint_focus(ui, rect, radius::CONTROL, id, focus);
 }
 
 /// Paints an optional prefix (Ink 3) at the field's left padding; returns where the value starts.
@@ -468,7 +485,8 @@ fn paint_prefix(ui: &Ui, rect: Rect, prefix: Option<&str>, glyph: Option<&str>) 
         x += size::ICON + space::S8;
     }
     if let Some(prefix) = prefix {
-        let r = ui.painter().text(
+        let r = paint_text(
+            ui,
             pos2(x, y),
             Align2::LEFT_CENTER,
             prefix,
@@ -618,7 +636,8 @@ impl Widget for TextInput<'_> {
                 r.left() - space::S4
             });
             if let Some(suffix) = self.suffix {
-                let r = ui.painter().text(
+                let r = paint_text(
+                    ui,
                     pos2(right, rect.center().y),
                     Align2::RIGHT_CENTER,
                     suffix,
@@ -683,7 +702,7 @@ impl Widget for TextInput<'_> {
             });
             let mut l = look(&response, self.state);
             l.hover |= self.state == State::Live && ui.rect_contains_pointer(rect);
-            paint_field(ui, frame, rect, l, self.error.is_some());
+            paint_field(ui, frame, rect, response.id, l, self.error.is_some());
             if let Some((clear, label)) = clear {
                 let button = Button::icon(icon::X, label).small();
                 let button = |ui: &mut Ui| ui.add_enabled(!disabled, button);
@@ -776,9 +795,7 @@ impl Widget for Swatches<'_> {
                     StrokeKind::Outside,
                 );
             }
-            if l.focus {
-                paint_focus(ui, swatch, radius::SMALL);
-            }
+            paint_focus(ui, swatch, radius::SMALL, r.id, l.focus);
         }
         response
     }
@@ -930,7 +947,8 @@ impl Widget for DragField<'_> {
                 true => "\u{2014}".to_owned(),
                 false => format!("{:.*}{}", self.decimals, self.value, self.suffix),
             };
-            ui.painter().text(
+            paint_text(
+                ui,
                 pos2(x, rect.center().y),
                 Align2::LEFT_CENTER,
                 &text,
@@ -943,7 +961,7 @@ impl Widget for DragField<'_> {
         });
         let mut l = look(&response, self.state);
         l.focus |= self.state == State::Live && focus;
-        paint_field(ui, frame, rect, l, false);
+        paint_field(ui, frame, rect, response.id, l, false);
         response
     }
 }
@@ -985,9 +1003,34 @@ pub fn paint_fit(ui: &Ui, pos: egui::Pos2, galley: Arc<Galley>, color: Color32) 
 }
 
 /// Paints `galley` left-aligned at `x`, centred on `y`.
-fn paint_left(ui: &Ui, x: f32, y: f32, galley: Arc<Galley>, color: Color32) {
-    let pos = pos2(x, y - galley.size().y / 2.0);
+pub(crate) fn paint_left(ui: &Ui, x: f32, y: f32, galley: Arc<Galley>, color: Color32) {
+    let pos = text_pos(&galley, x, y);
     ui.painter().galley(pos, galley, color);
+}
+
+/// Keeps the visible ink centered even when the font's line metrics are asymmetric.
+pub(crate) fn text_pos(galley: &Galley, x: f32, y: f32) -> egui::Pos2 {
+    let center = if galley.mesh_bounds.is_finite() {
+        galley.mesh_bounds.center().y
+    } else {
+        galley.size().y / 2.0
+    };
+    pos2(x, y - center)
+}
+
+/// Single-line ink centered vertically; horizontal alignment keeps the advance width.
+fn paint_text(
+    ui: &Ui,
+    at: egui::Pos2,
+    align: Align2,
+    text: &str,
+    font: FontId,
+    ink: Color32,
+) -> Rect {
+    let galley = ui.painter().layout_no_wrap(text.into(), font, ink);
+    let rect = align.anchor_size(at, galley.size());
+    paint_left(ui, rect.left(), at.y, galley, ink);
+    rect
 }
 
 /// Where a dropdown's menu opens, and its tallest scroll height: below the field unless
@@ -1063,7 +1106,7 @@ impl<'a> Select<'a> {
         // An open menu keeps the field's focus look.
         l.focus |= egui::Popup::is_id_open(ui.ctx(), egui::Popup::default_response_id(&response));
         let frame = ui.painter().add(Shape::Noop);
-        paint_field(ui, frame, rect, l, false);
+        paint_field(ui, frame, rect, response.id, l, false);
         let ink = match () {
             _ if l.disabled => color::ink_4(),
             _ if self.placeholder => color::ink_2(),
@@ -1367,19 +1410,21 @@ impl Widget for MenuRow<'_> {
             });
             let enabled = response.enabled();
             let lit = enabled && (self.lit || response.hovered() || response.has_focus());
-            if lit {
-                ui.painter().rect_filled(
-                    rect,
-                    CornerRadius::same(radius::SMALL),
-                    color::selection_fill(),
-                );
-            }
+            let fill = if lit {
+                color::selection_fill()
+            } else {
+                Color32::TRANSPARENT
+            };
+            let fill = motion::color(ui.ctx(), response.id.with("fill"), fill);
+            ui.painter()
+                .rect_filled(rect, CornerRadius::same(radius::SMALL), fill);
             let option = self.slot == CheckSlot::Trailing;
             let ink = match () {
                 _ if !enabled => color::ink_4(),
                 _ if option && !lit && !self.checked => color::ink_2(),
                 _ => color::ink(),
             };
+            let ink = motion::color(ui.ctx(), response.id.with("ink"), ink);
             let secondary = color::ink_3();
             let font = if option && self.checked {
                 theme::body_strong()
@@ -1530,7 +1575,7 @@ impl Widget for Segmented<'_> {
             .iter()
             .map(|o| match self.names {
                 Some(_) => self.height - 2.0 * pad,
-                None => (text_width(ui, o, &font) + 2.0 * side).ceil(),
+                None => (text_width(ui, o, &font) + 2.0 * side).round(),
             })
             .collect();
         let chrome = 2.0 * pad + gap * widths.len().saturating_sub(1) as f32;
@@ -1560,10 +1605,21 @@ impl Widget for Segmented<'_> {
             ui.painter()
                 .rect_filled(rect, CornerRadius::same(radius::CONTROL), track);
         }
+        if !self.pills {
+            ui.painter()
+                .add(border(ui, rect, radius::CONTROL, color::surface_outline()));
+        }
         let (corner, selected_fill) = if self.pills {
             ((self.height / 2.0) as u8, color::selection_fill())
         } else {
-            (radius::SMALL, color::raised())
+            (
+                radius::SMALL,
+                if color::surface_outline() == Color32::TRANSPARENT {
+                    color::raised()
+                } else {
+                    color::selection_fill()
+                },
+            )
         };
         let first_unselected = (0..self.options.len()).find(|i| i != self.selected);
         let mut x = rect.left() + pad;
@@ -1622,6 +1678,7 @@ impl Widget for Segmented<'_> {
                 _ if l.focus => color::selection_fill(),
                 _ => Color32::TRANSPARENT,
             };
+            let fill = motion::color(ui.ctx(), seg_response.id.with("fill"), fill);
             ui.painter()
                 .rect_filled(seg, CornerRadius::same(corner), fill);
             let ink = match () {
@@ -1629,6 +1686,7 @@ impl Widget for Segmented<'_> {
                 _ if on => color::ink(),
                 _ => color::ink_2(),
             };
+            let ink = motion::color(ui.ctx(), seg_response.id.with("ink"), ink);
             if self.pills || self.width.is_some() {
                 let text = fit_text(
                     ui,
@@ -1637,15 +1695,14 @@ impl Widget for Segmented<'_> {
                     ink,
                     (seg.width() - space::S8).max(0.0),
                 );
-                let at = Align2::CENTER_CENTER
-                    .align_size_within_rect(text.size(), seg)
-                    .min;
-                ui.painter().galley(at, text, ink);
+                let x = seg.center().x - text.size().x / 2.0;
+                paint_left(ui, x, seg.center().y, text, ink);
             } else {
-                ui.painter().text(
+                paint_text(
+                    ui,
                     seg.center(),
                     Align2::CENTER_CENTER,
-                    *option,
+                    option,
                     font.clone(),
                     ink,
                 );
@@ -1755,6 +1812,8 @@ impl Widget for Checkbox<'_> {
             _ if l.focus => (Color32::TRANSPARENT, color::light_blue(), color::WHITE),
             _ => (Color32::TRANSPARENT, color::border_strong(), color::WHITE),
         };
+        let fill = motion::color(ui.ctx(), response.id.with("fill"), fill);
+        let edge = motion::color(ui.ctx(), response.id.with("edge"), edge);
         ui.painter().rect_filled(check, corner, fill);
         ui.painter().add(border(ui, check, radius::SMALL, edge));
         if *self.checked {
@@ -1765,16 +1824,15 @@ impl Widget for Checkbox<'_> {
         } else {
             color::ink()
         };
-        ui.painter().text(
+        paint_text(
+            ui,
             pos2(check.right() + space::S8, rect.center().y),
             Align2::LEFT_CENTER,
             self.label,
             theme::body(),
             ink,
         );
-        if l.focus {
-            paint_focus(ui, check, radius::SMALL);
-        }
+        paint_focus(ui, check, radius::SMALL, response.id, l.focus);
         response
     }
 }
@@ -2505,9 +2563,7 @@ impl Widget for CurveEditor<'_> {
             };
             painter.circle(to_screen(*p), 3.5, fill, Stroke::new(1.0, color::field()));
         }
-        if l.focus {
-            paint_focus(ui, rect, corner);
-        }
+        paint_focus(ui, rect, corner, response.id, l.focus);
         response
     }
 }
@@ -2603,7 +2659,7 @@ impl Widget for ColorField<'_> {
         let field =
             Rect::from_x_y_ranges(swatch.right() + space::S8..=rect.right(), rect.y_range());
         let frame = ui.painter().add(Shape::Noop);
-        paint_field(ui, frame, field, l, false);
+        paint_field(ui, frame, field, response.id, l, false);
         let (left, right) = (
             field.left() + space::FIELD_PAD,
             field.right() - space::FIELD_PAD,
@@ -2618,18 +2674,31 @@ impl Widget for ColorField<'_> {
             None => {
                 let none = tr!(CATALOG, "color.none");
                 let p = pos2(left, y);
-                ui.painter()
-                    .text(p, Align2::LEFT_CENTER, none, theme::body(), color::ink_3());
+                paint_text(
+                    ui,
+                    p,
+                    Align2::LEFT_CENTER,
+                    none,
+                    theme::body(),
+                    color::ink_3(),
+                );
             }
             Some((hex, alpha)) => {
-                ui.painter()
-                    .text(pos2(left, y), Align2::LEFT_CENTER, hex, theme::body(), ink);
+                paint_text(
+                    ui,
+                    pos2(left, y),
+                    Align2::LEFT_CENTER,
+                    hex,
+                    theme::body(),
+                    ink,
+                );
                 let room = right - left - text_width(ui, hex, &theme::body()) - space::S8;
                 if let Some(alpha) = alpha.as_ref()
                     && text_width(ui, alpha, &theme::body()) <= room
                 {
                     let p = pos2(right, y);
-                    ui.painter().text(
+                    paint_text(
+                        ui,
                         p,
                         Align2::RIGHT_CENTER,
                         alpha,

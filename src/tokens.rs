@@ -30,6 +30,14 @@ pub mod color {
         crate::themes::current().selection_fill()
     }
 
+    /// Separates surfaces and controls when the palette needs contrast outlines.
+    pub fn surface_outline() -> Color32 {
+        if selection_fill() != border() {
+            return border();
+        }
+        Color32::TRANSPARENT
+    }
+
     macro_rules! themed {
         ($($name:ident),*) => {$(
             pub fn $name() -> Color32 {

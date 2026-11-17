@@ -70,6 +70,21 @@ fn component_gallery_is_interactive_at_both_window_sizes_and_scales() {
                     }
                 });
             harness.run_steps(4);
+            let plus = harness.get_by_label("+1s").rect();
+            for shape in &harness.output().shapes {
+                let egui::Shape::Text(text) = &shape.shape else {
+                    continue;
+                };
+                if text.galley.text() == "+1s" {
+                    assert!(
+                        shape.clip_rect.contains_rect(plus),
+                        "{viewport:?} {ppp}x Inspector action clipped: {plus:?}"
+                    );
+                }
+            }
+            harness.get_by_label("+1s").click();
+            harness.run_steps(2);
+            assert!(harness.query_all_by_label("00:01:13:08").next().is_some());
             harness.get_by_label("Components").click();
             harness.run();
             harness
@@ -87,4 +102,62 @@ fn component_gallery_is_interactive_at_both_window_sizes_and_scales() {
     }
     results.unwrap();
     println!("PASSED gallery: live components and toast, 1280x800/1920x1080, DPI 1/1.5");
+}
+
+#[test]
+fn gallery_disabled_and_loading_columns_are_reachable_without_sideways_clipping() {
+    use egui_kittest::kittest::Queryable;
+    if !common::gpu() {
+        return;
+    }
+    let mut results = egui_kittest::SnapshotResults::new();
+    for viewport in [[1280.0, 860.0], [1920.0, 1080.0]] {
+        for ppp in [1.0, 1.5] {
+            let mut state = gallery::Gallery::new();
+            let mut fresh = true;
+            let mut h = egui_kittest::Harness::builder()
+                .with_size(viewport)
+                .with_pixels_per_point(ppp)
+                .wgpu()
+                .build_ui(|ui| {
+                    if !common::install_theme(ui, &mut fresh) {
+                        gallery::gallery(ui, &mut state);
+                    }
+                });
+            h.run_steps(4);
+            h.get_by_label("Loading / Error").scroll_to_me();
+            h.run_steps(12);
+            for label in ["Disabled", "Loading / Error"] {
+                let rect = h.get_by_label(label).rect();
+                assert!(
+                    rect.top() >= 80.0 && rect.bottom() < viewport[1] - 32.0,
+                    "{label}: {rect:?}"
+                );
+            }
+            for clipped in &h.output().shapes {
+                let egui::Shape::Text(text) = &clipped.shape else {
+                    continue;
+                };
+                if text.galley.text().is_empty() {
+                    continue;
+                }
+                let ink = text.visual_bounding_rect();
+                if ink.top() < clipped.clip_rect.top() || ink.bottom() > clipped.clip_rect.bottom()
+                {
+                    continue;
+                }
+                assert!(
+                    ink.left() >= clipped.clip_rect.left() - 1.0
+                        && ink.right() <= clipped.clip_rect.right() + 1.0,
+                    "horizontal clipping: {} at {ink:?}",
+                    text.galley.text()
+                );
+            }
+            results.add(h.try_snapshot(format!("gallery_states_{}_{}x", viewport[0], ppp)));
+        }
+    }
+    results.unwrap();
+    println!(
+        "PASSED gallery: Disabled and Loading / Error remain reachable with no horizontal ink clipping; 1280x860/1920x1080 at 100%/150%"
+    );
 }

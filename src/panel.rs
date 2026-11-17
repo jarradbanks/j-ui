@@ -1,12 +1,11 @@
 //! The panel frame every dock panel uses: a borderless 16px-radius Panel surface (a 1px
 //! Blue border when focused) and one 48px header holding a title or tabs.
 
-use egui::emath::GuiRounding as _;
 use egui::{CornerRadius, Rect, Sense, StrokeKind, Ui, UiBuilder, Vec2, pos2, vec2};
 
 use crate::theme::{self, hairline};
 use crate::tokens::{color, radius, size, space};
-use crate::widgets::{Button, fit_text, paint_fit, tab_strip};
+use crate::widgets::{Button, fit_text, paint_fit, tab_strip, text_pos};
 
 /// What a panel's header shows.
 pub enum Header<'a> {
@@ -115,6 +114,12 @@ impl<'a> Panel<'a> {
         let painter = ui.painter().clone();
         if !self.embedded {
             painter.rect_filled(rect, corner, color::panel());
+            painter.rect_stroke(
+                rect,
+                corner,
+                hairline(ui.ctx(), color::surface_outline()),
+                StrokeKind::Inside,
+            );
         }
 
         let height = if matches!(self.header, Header::None) {
@@ -148,8 +153,8 @@ impl<'a> Panel<'a> {
             Header::Title(title) => {
                 let left = header.left() + space::INSET;
                 let galley = fit_text(ui, title, theme::panel_title(), color::ink(), right - left);
-                let pos = pos2(left, header.center().y - galley.size().y / 2.0);
-                paint_fit(ui, pos.round_to_pixels(ppp), galley, color::ink());
+                let pos = text_pos(&galley, left, header.center().y);
+                paint_fit(ui, pos, galley, color::ink());
             }
             Header::Tabs { labels, active } => {
                 let max = if self.wide {

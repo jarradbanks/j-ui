@@ -51,15 +51,18 @@ pub(crate) fn tab_strip(
             _ if on || r.has_focus() => color::ink(),
             _ => color::ink_3(),
         };
+        let ink = motion::color(ui.ctx(), r.id.with("ink"), ink);
+        let edge = if on {
+            color::ink()
+        } else {
+            Color32::TRANSPARENT
+        };
+        let edge = motion::color(ui.ctx(), r.id.with("edge"), edge);
         let galley = fit_text(ui, label, font.clone(), ink, width);
         let _ = hover_full(r, &galley);
-        let pos = pos2(tab.left(), row.center().y - galley.size().y / 2.0);
-        ui.painter()
-            .galley(pos.round_to_pixels(ui.pixels_per_point()), galley, ink);
-        if on {
-            let underline = tab.with_min_y(row.bottom() - 2.0);
-            ui.painter().rect_filled(underline, 0.0, color::ink());
-        }
+        paint_left(ui, tab.left(), row.center().y, galley, ink);
+        let underline = tab.with_min_y(row.bottom() - 2.0);
+        ui.painter().rect_filled(underline, 0.0, edge);
     }
     if overflow {
         let slot = Rect::from_min_size(
@@ -132,13 +135,14 @@ impl Widget for NavRow<'_> {
             WidgetInfo::selected(kind, response.enabled(), self.selected, self.label)
         });
         // Keyboard focus shows the hover fill, never a ring.
-        if self.selected || response.hovered() || response.has_focus() {
-            ui.painter().rect_filled(
-                rect,
-                CornerRadius::same(radius::CONTROL),
-                color::selection_fill(),
-            );
-        }
+        let fill = if self.selected || response.hovered() || response.has_focus() {
+            color::selection_fill()
+        } else {
+            Color32::TRANSPARENT
+        };
+        let fill = motion::color(ui.ctx(), response.id.with("fill"), fill);
+        ui.painter()
+            .rect_filled(rect, CornerRadius::same(radius::CONTROL), fill);
         let (font, ink) = match self.selected {
             true => (theme::body_strong(), color::ink()),
             false => (theme::body(), color::ink_2()),
@@ -148,6 +152,7 @@ impl Widget for NavRow<'_> {
         } else {
             color::ink_4()
         };
+        let ink = motion::color(ui.ctx(), response.id.with("ink"), ink);
         let label = fit_text(ui, self.label, font, ink, rect.width() - 2.0 * PAD);
         let response = hover_full(response, &label);
         paint_left(ui, rect.left() + PAD, rect.center().y, label, ink);

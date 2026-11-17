@@ -1,8 +1,65 @@
 //! Short, bounded egui animations. Zero duration also settles egui's own Area fades.
 
-use egui::{Context, Id, Ui, emath::TSTransform, epaint::ClippedShape, layers::ShapeIdx};
+use egui::{Color32, Context, Id, Ui, emath::TSTransform, epaint::ClippedShape, layers::ShapeIdx};
 
 const SECONDS: f32 = 0.16;
+
+#[derive(Clone, Copy)]
+struct ColorTransition {
+    from: Color32,
+    to: Color32,
+    started: f64,
+}
+
+/// A 120ms CSS-ease color transition; interruptions continue from the painted color.
+pub(crate) fn color(ctx: &Context, id: Id, target: Color32) -> Color32 {
+    let id = id.with("color-transition");
+    if !enabled(ctx) {
+        ctx.data_mut(|data| data.remove::<ColorTransition>(id));
+        return target;
+    }
+    let now = ctx.input(|input| input.time);
+    let mut state = ctx
+        .data_mut(|data| data.get_temp::<ColorTransition>(id))
+        .unwrap_or(ColorTransition {
+            from: target,
+            to: target,
+            started: now,
+        });
+    let elapsed = ((now - state.started) / 0.12).clamp(0.0, 1.0) as f32;
+    let current = state.from.lerp_to_gamma(state.to, ease(elapsed));
+    if state.to != target {
+        state = ColorTransition {
+            from: current,
+            to: target,
+            started: now,
+        };
+    }
+    if state.from != state.to && now - state.started < 0.12 {
+        ctx.request_repaint();
+    }
+    ctx.data_mut(|data| data.insert_temp(id, state));
+    current
+}
+
+// CSS ease is cubic-bezier(0.25, 0.1, 0.25, 1); solve x before sampling y.
+fn ease(progress: f32) -> f32 {
+    if progress == 0.0 || progress == 1.0 {
+        return progress;
+    }
+    let (mut low, mut high) = (0.0, 1.0);
+    for _ in 0..16 {
+        let t = (low + high) / 2.0;
+        let x = 0.75 * (1.0 - t) * t + t * t * t;
+        if x < progress {
+            low = t;
+        } else {
+            high = t;
+        }
+    }
+    let t = (low + high) / 2.0;
+    0.3 * (1.0 - t).powi(2) * t + 3.0 * (1.0 - t) * t * t + t * t * t
+}
 
 pub fn set_enabled(ctx: &Context, enabled: bool) {
     ctx.all_styles_mut(|style| style.animation_time = if enabled { SECONDS } else { 0.0 });

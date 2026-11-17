@@ -282,20 +282,25 @@ pub fn visuals_with(p: &Palette) -> Visuals {
     w.noninteractive.weak_bg_fill = color.panel;
     w.noninteractive.bg_stroke = Stroke::new(1.0, color.border);
     w.noninteractive.fg_stroke = Stroke::new(1.0, color.ink);
-    // Controls are borderless: the fill's tone step carries the shape. The stroke stays
-    // transparent, not absent, because `sync_hairlines` rewrites every width.
-    let borderless = Stroke::new(1.0, Color32::TRANSPARENT);
+    // Transparent strokes still reserve their width; High Contrast retains the outline.
+    // Keep the width because `sync_hairlines` rewrites it at fractional DPI.
+    let outline = if color.selection_fill() == color.border {
+        Color32::TRANSPARENT
+    } else {
+        color.border
+    };
+    let control_stroke = Stroke::new(1.0, outline);
     w.inactive.bg_fill = color.ground;
     w.inactive.weak_bg_fill = color.selection_fill();
-    w.inactive.bg_stroke = borderless;
+    w.inactive.bg_stroke = control_stroke;
     w.inactive.fg_stroke = Stroke::new(1.0, color.ink);
     w.hovered.bg_fill = color.ground;
     w.hovered.weak_bg_fill = color.raised;
-    w.hovered.bg_stroke = borderless;
+    w.hovered.bg_stroke = control_stroke;
     w.hovered.fg_stroke = Stroke::new(1.0, color.ink);
     w.active.bg_fill = color.ground;
     w.active.weak_bg_fill = color.raised;
-    w.active.bg_stroke = borderless;
+    w.active.bg_stroke = control_stroke;
     w.active.fg_stroke = Stroke::new(1.0, color.ink);
     w.open = w.active;
     for wv in [

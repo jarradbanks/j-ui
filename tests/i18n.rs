@@ -109,14 +109,20 @@ fn gallery_switches_language_without_a_restart() {
         });
     harness.run_steps(4);
     for label in ["Más pestañas", "Principal", "Controles", "Al pasar"] {
-        assert!(harness.query_by_label(label).is_some(), "no {label:?}");
+        assert!(
+            harness.query_all_by_label(label).next().is_some(),
+            "no {label:?}"
+        );
     }
     assert!(harness.query_by_label("More Tabs").is_none());
 
     i18n::set_language("en");
     harness.run_steps(4);
     for label in ["More Tabs", "Primary", "Widgets", "Hover"] {
-        assert!(harness.query_by_label(label).is_some(), "no {label:?}");
+        assert!(
+            harness.query_all_by_label(label).next().is_some(),
+            "no {label:?}"
+        );
     }
     assert!(harness.query_by_label("Más pestañas").is_none());
 }

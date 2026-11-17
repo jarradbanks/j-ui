@@ -66,8 +66,14 @@ impl Widget for Badge<'_> {
         response.widget_info(|| WidgetInfo::labeled(WidgetType::Label, true, self.label));
         ui.painter()
             .rect_filled(rect, CornerRadius::same(radius::SMALL), fill);
-        ui.painter()
-            .text(rect.center(), Align2::CENTER_CENTER, self.label, font, ink);
+        paint_text(
+            ui,
+            rect.center(),
+            Align2::CENTER_CENTER,
+            self.label,
+            font,
+            ink,
+        );
         response
     }
 }

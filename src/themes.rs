@@ -252,7 +252,7 @@ impl Palette {
     /// Soft control and selection fill; high-contrast borders stay reserved for outlines.
     pub fn selection_fill(&self) -> Color32 {
         if crate::tokens::contrast(self.ink, self.border) < 4.5 {
-            return self.raised;
+            return self.raised.lerp_to_gamma(self.ink, 0.33);
         }
         self.border
     }

@@ -132,22 +132,25 @@ pub fn gallery(ui: &mut egui::Ui, g: &mut Gallery) {
                     ])
                     .show(ui, |ui| {
                         let width = ui.available_width();
-                        egui::ScrollArea::both().show(ui, |ui| {
-                            if g.tab == 2 {
-                                ui.set_width(width);
-                                ui.vertical(|ui| components::show(ui, &mut g.components));
-                            } else if g.tab == 1 {
-                                selection(ui, g);
-                            } else {
-                                states(ui, g);
-                            }
+                        egui::ScrollArea::vertical().show(ui, |ui| {
+                            ui.set_width(width);
+                            ui.vertical(|ui| match g.tab {
+                                2 => components::show(ui, &mut g.components),
+                                1 => selection(ui, g),
+                                _ => states(ui, g),
+                            });
                         });
                     });
                 g.tab = tab;
             });
             ui.vertical(|ui| {
                 ui.spacing_mut().item_spacing.y = space::GUTTER;
-                ui.allocate_ui(egui::vec2(360.0, 264.0), |ui| {
+                let inspector_height = size::HEADER
+                    + 2.0 * space::INSET
+                    + 2.0
+                    + 4.0 * size::CONTROL
+                    + 3.0 * space::GAP;
+                ui.allocate_ui(egui::vec2(360.0, inspector_height), |ui| {
                     Panel::titled(tr!("panel.inspector")).show(ui, |ui| inspector(ui, g));
                 });
                 ui.allocate_ui(egui::vec2(360.0, 120.0), |ui| {
@@ -172,14 +175,28 @@ pub fn gallery(ui: &mut egui::Ui, g: &mut Gallery) {
 }
 
 fn states(ui: &mut egui::Ui, g: &mut Gallery) {
+    let columns = ((ui.available_width() - 120.0) / 190.0)
+        .floor()
+        .clamp(1.0, 6.0) as usize;
+    for start in (0..6).step_by(columns) {
+        let end = (start + columns).min(6);
+        let shown = &STATES[start.min(STATES.len())..end.min(STATES.len())];
+        ui.push_id(start, |ui| state_group(ui, g, shown, end == 6));
+        ui.add_space(space::S16);
+    }
+}
+
+fn state_group(ui: &mut egui::Ui, g: &mut Gallery, shown: &[(i18n::Label, State)], loading: bool) {
     egui::Grid::new("states")
         .spacing([space::S16, space::S12])
         .show(ui, |ui| {
             ui.label("");
-            for (name, _) in STATES {
+            for &(name, _) in shown {
                 ui.label(egui::RichText::new(name()).color(color::ink_3()));
             }
-            ui.label(egui::RichText::new(tr!("state.loading_error")).color(color::ink_3()));
+            if loading {
+                ui.label(egui::RichText::new(tr!("state.loading_error")).color(color::ink_3()));
+            }
             ui.end_row();
 
             for kind in [
@@ -199,26 +216,30 @@ fn states(ui: &mut egui::Ui, g: &mut Gallery) {
                 } else {
                     tr!("demo.export")
                 };
-                for (_, s) in STATES {
+                for &(_, s) in shown {
                     ui.add(Button::new(kind, label).state(s));
                 }
-                ui.add(
-                    Button::new(kind, label)
-                        .with_icon(icon::CHECK)
-                        .loading(true),
-                );
+                if loading {
+                    ui.add(
+                        Button::new(kind, label)
+                            .with_icon(icon::CHECK)
+                            .loading(true),
+                    );
+                }
                 ui.end_row();
             }
 
             ui.label(tr!("row.icon"));
-            for (_, s) in STATES {
+            for &(_, s) in shown {
                 ui.add(Button::icon(icon::PLUS, tr!("panel.add")).state(s));
             }
-            ui.add(Button::icon(icon::PLUS, tr!("panel.add")).on(true));
+            if loading {
+                ui.add(Button::icon(icon::PLUS, tr!("panel.add")).on(true));
+            }
             ui.end_row();
 
             ui.label(tr!("row.input"));
-            for (_, s) in STATES {
+            for &(_, s) in shown {
                 ui.add(
                     TextInput::new(&mut g.text)
                         .prefix(tr!("demo.width_prefix"))
@@ -227,45 +248,49 @@ fn states(ui: &mut egui::Ui, g: &mut Gallery) {
                         .state(s),
                 );
             }
-            ui.add(
-                TextInput::new(&mut g.text)
-                    .prefix(tr!("demo.width_prefix"))
-                    .hint("1920")
-                    .width(120.0)
-                    .error(Some(tr!("demo.min_error"))),
-            );
+            if loading {
+                ui.add(
+                    TextInput::new(&mut g.text)
+                        .prefix(tr!("demo.width_prefix"))
+                        .hint("1920")
+                        .width(120.0)
+                        .error(Some(tr!("demo.min_error"))),
+                );
+            }
             ui.end_row();
 
             ui.label(tr!("row.search"));
-            for (_, s) in STATES {
+            for &(_, s) in shown {
                 ui.add(TextInput::search(&mut g.search).width(120.0).state(s));
             }
             ui.end_row();
 
             ui.label(tr!("row.numeric"));
-            for (_, s) in STATES {
+            for &(_, s) in shown {
                 ui.add(DragField::new(&mut g.value).prefix(verbatim("X")).state(s));
             }
             ui.end_row();
 
             ui.label(tr!("row.dropdown"));
             let options = ["1/2", tr!("demo.full"), "1/4"];
-            for (_, s) in STATES {
+            for &(_, s) in shown {
                 ui.add(Dropdown::new(&mut g.choice, &options).width(96.0).state(s));
             }
             ui.end_row();
 
             ui.label(tr!("row.colour"));
-            for (_, s) in STATES {
+            for &(_, s) in shown {
                 ui.allocate_ui(egui::vec2(120.0, size::CONTROL), |ui| {
                     ui.add(ColorField::new(&mut g.colour, tr!("demo.fill")).state(s));
                 });
             }
-            // Translucent: the swatch shows the checkerboard.
-            ui.allocate_ui(egui::vec2(120.0, size::CONTROL), |ui| {
-                let mut half = [g.colour[0], g.colour[1], g.colour[2], 0x80];
-                ui.add(ColorField::new(&mut half, tr!("demo.fill")));
-            });
+            if loading {
+                // Translucent: the swatch shows the checkerboard.
+                ui.allocate_ui(egui::vec2(120.0, size::CONTROL), |ui| {
+                    let mut half = [g.colour[0], g.colour[1], g.colour[2], 0x80];
+                    ui.add(ColorField::new(&mut half, tr!("demo.fill")));
+                });
+            }
             ui.end_row();
 
             ui.label(tr!("row.swatches"));
@@ -275,39 +300,45 @@ fn states(ui: &mut egui::Ui, g: &mut Gallery) {
                 tr!("demo.ochre"),
                 tr!("demo.green"),
             ];
-            for (_, s) in STATES {
+            for &(_, s) in shown {
                 ui.add(Swatches::new(&mut g.swatch, &color::CLIPS, &names).state(s));
             }
             ui.end_row();
 
             ui.label(tr!("row.segmented"));
             let segments = [tr!("demo.fit"), tr!("demo.fill"), "1:1"];
-            for (_, s) in STATES {
+            for &(_, s) in shown {
                 ui.add(Segmented::new(&mut g.segment, &segments).state(s));
             }
             ui.end_row();
 
             ui.label(tr!("row.checkbox"));
-            for (_, s) in STATES {
+            for &(_, s) in shown {
                 let mut on = g.checked || s == State::Pressed;
                 ui.add(Checkbox::new(&mut on, tr!("demo.snap")).state(s));
             }
-            ui.add(Checkbox::new(&mut g.checked, tr!("demo.live")));
+            if loading {
+                ui.add(Checkbox::new(&mut g.checked, tr!("demo.live")));
+            }
             ui.end_row();
 
             ui.label(tr!("row.slider"));
-            for (_, s) in STATES {
+            for &(_, s) in shown {
                 ui.allocate_ui(egui::vec2(120.0, size::CONTROL), |ui| {
                     ui.add(Slider::new(&mut g.level, 0.0..=1.0, tr!("demo.scale")).state(s));
                 });
             }
-            ui.allocate_ui(egui::vec2(120.0, size::CONTROL), |ui| {
-                ui.add(Slider::new(&mut g.value, -100.0..=100.0, tr!("demo.scale")).centred(true));
-            });
+            if loading {
+                ui.allocate_ui(egui::vec2(120.0, size::CONTROL), |ui| {
+                    ui.add(
+                        Slider::new(&mut g.value, -100.0..=100.0, tr!("demo.scale")).centred(true),
+                    );
+                });
+            }
             ui.end_row();
 
             ui.label(tr!("row.keyframe"));
-            for (_, s) in STATES {
+            for &(_, s) in shown {
                 ui.horizontal(|ui| {
                     ui.spacing_mut().item_spacing.x = 2.0;
                     ui.add(Button::icon(icon::UNDO, tr!("demo.reset")).small().state(s));
@@ -316,15 +347,17 @@ fn states(ui: &mut egui::Ui, g: &mut Gallery) {
                     ui.add(KeyButton::diamond(Keyed::Static, tr!("demo.animate")).state(s));
                 });
             }
-            ui.horizontal(|ui| {
-                ui.spacing_mut().item_spacing.x = 2.0;
-                ui.add(KeyButton::diamond(Keyed::Animated, tr!("demo.animate")));
-                ui.add(KeyButton::diamond(Keyed::Here, tr!("demo.animate")));
-            });
+            if loading {
+                ui.horizontal(|ui| {
+                    ui.spacing_mut().item_spacing.x = 2.0;
+                    ui.add(KeyButton::diamond(Keyed::Animated, tr!("demo.animate")));
+                    ui.add(KeyButton::diamond(Keyed::Here, tr!("demo.animate")));
+                });
+            }
             ui.end_row();
 
             ui.label(tr!("row.section"));
-            for (_, s) in STATES {
+            for &(_, s) in shown {
                 ui.allocate_ui(egui::vec2(120.0, size::HEADER), |ui| {
                     let mut open = g.open;
                     ui.add(SectionHeader::new(tr!("demo.transform"), &mut open).state(s));
@@ -335,6 +368,7 @@ fn states(ui: &mut egui::Ui, g: &mut Gallery) {
 }
 
 fn inspector(ui: &mut egui::Ui, g: &mut Gallery) {
+    ui.spacing_mut().item_spacing.y = space::GAP;
     ui.add(SectionHeader::new(tr!("demo.transform"), &mut g.open));
     if g.open {
         ui.horizontal(|ui| {

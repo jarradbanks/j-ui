@@ -121,13 +121,15 @@ impl<'a> Table<'a> {
                 response.mark_changed();
             }
             // Keyboard focus shows the hover fill, never a ring.
-            if on || r.hovered() || r.has_focus() {
-                let corner = CornerRadius::same(radius::SMALL);
-                ui.painter().set(
-                    fill,
-                    Shape::rect_filled(line, corner, color::selection_fill()),
-                );
-            }
+            let target = if on || r.hovered() || r.has_focus() {
+                color::selection_fill()
+            } else {
+                Color32::TRANSPARENT
+            };
+            let target = motion::color(ui.ctx(), r.id.with("fill"), target);
+            let corner = CornerRadius::same(radius::SMALL);
+            ui.painter()
+                .set(fill, Shape::rect_filled(line, corner, target));
         }
         response
     }
@@ -150,10 +152,17 @@ impl Card {
         add_contents: impl FnOnce(&mut Ui) -> R,
     ) -> egui::InnerResponse<R> {
         // Top to bottom whatever row or grid the card sits in.
-        egui::Frame::new()
+        let output = egui::Frame::new()
             .fill(color::raised())
             .inner_margin(1.0)
             .corner_radius(radius::PANEL)
-            .show(ui, |ui| ui.vertical(add_contents).inner)
+            .show(ui, |ui| ui.vertical(add_contents).inner);
+        ui.painter().add(border(
+            ui,
+            output.response.rect,
+            radius::PANEL,
+            color::surface_outline(),
+        ));
+        output
     }
 }
