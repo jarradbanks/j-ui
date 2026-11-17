@@ -44,6 +44,8 @@ mod components;
 
 fn main() -> eframe::Result {
     i18n::set_language(i18n::resolve(i18n::SYSTEM));
+    #[cfg(all(debug_assertions, feature = "hot-reload"))]
+    dioxus_devtools::connect_subsecond();
     eframe::run_native(
         verbatim("j-ui gallery"),
         eframe::NativeOptions {
@@ -52,6 +54,8 @@ fn main() -> eframe::Result {
         },
         Box::new(|cc| {
             theme::install(&cc.egui_ctx);
+            #[cfg(all(debug_assertions, feature = "debug-ui"))]
+            j_ui_debug::install_from_env(&cc.egui_ctx, "j-ui-gallery")?;
             Ok(Box::new(Gallery::new()))
         }),
     )
@@ -95,6 +99,9 @@ impl Gallery {
 
 impl eframe::App for Gallery {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        #[cfg(all(debug_assertions, feature = "hot-reload"))]
+        subsecond::call(|| gallery(ui, self));
+        #[cfg(not(all(debug_assertions, feature = "hot-reload")))]
         gallery(ui, self);
     }
 }
