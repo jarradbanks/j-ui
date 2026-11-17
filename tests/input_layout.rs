@@ -74,7 +74,10 @@ fn focus_ring_is_complete_at_all_clipped_container_edges() {
         let mut missing = 0;
         for y in (20.0 * ppp) as u32..(64.0 * ppp) as u32 {
             for x in (20.0 * ppp) as u32..(64.0 * ppp) as u32 {
-                if image.get_pixel(x, y) != image.get_pixel(x + (96.0 * ppp) as u32, y) {
+                let a = image.get_pixel(x, y);
+                let b = image.get_pixel(x + (96.0 * ppp) as u32, y);
+                // Fractional-DPI tessellation can differ by one channel level after translation.
+                if a.0.iter().zip(b.0).any(|(a, b)| a.abs_diff(b) > 1) {
                     missing += 1;
                 }
             }
@@ -248,7 +251,7 @@ fn multiline_keeps_scrolling_content_inside_padding() {
         let row = h
             .ctx
             .fonts_mut(|fonts| fonts.row_height(&j_ui::theme::body()));
-        let bottom = 48.0 + 2.0 * row;
+        let bottom = 24.0 + j_ui::tokens::size::CONTROL + 2.0 * row;
         let mut overflow = 0;
         for y in ((bottom - 4.0) * ppp).ceil() as u32..((bottom + 40.0) * ppp) as u32 {
             for x in (312.0 * ppp) as u32..(536.0 * ppp) as u32 {

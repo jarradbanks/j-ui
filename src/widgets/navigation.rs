@@ -39,15 +39,17 @@ pub(crate) fn tab_strip(
         x = tab.right() + GAP;
         let r = ui.interact(tab, ui.id().with(("tab", i)), Sense::click());
         let on = i == *active;
-        r.widget_info(|| WidgetInfo::selected(WidgetType::SelectableLabel, true, on, *label));
+        r.widget_info(|| {
+            WidgetInfo::selected(WidgetType::SelectableLabel, r.enabled(), on, *label)
+        });
         if r.clicked() {
             *active = i;
         }
         // Keyboard focus lifts the label to Ink, never a ring.
-        let ink = if on || r.has_focus() {
-            color::ink()
-        } else {
-            color::ink_3()
+        let ink = match () {
+            _ if !r.enabled() => color::ink_4(),
+            _ if on || r.has_focus() => color::ink(),
+            _ => color::ink_3(),
         };
         let galley = fit_text(ui, label, font.clone(), ink, width);
         let _ = hover_full(r, &galley);
@@ -131,12 +133,20 @@ impl Widget for NavRow<'_> {
         });
         // Keyboard focus shows the hover fill, never a ring.
         if self.selected || response.hovered() || response.has_focus() {
-            ui.painter()
-                .rect_filled(rect, CornerRadius::same(radius::CONTROL), color::border());
+            ui.painter().rect_filled(
+                rect,
+                CornerRadius::same(radius::CONTROL),
+                color::selection_fill(),
+            );
         }
         let (font, ink) = match self.selected {
             true => (theme::body_strong(), color::ink()),
             false => (theme::body(), color::ink_2()),
+        };
+        let ink = if response.enabled() {
+            ink
+        } else {
+            color::ink_4()
         };
         let label = fit_text(ui, self.label, font, ink, rect.width() - 2.0 * PAD);
         let response = hover_full(response, &label);

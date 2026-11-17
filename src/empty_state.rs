@@ -68,9 +68,16 @@ impl<'a> EmptyState<'a> {
             .size()
             .max(vec2(0.0, 0.0));
         let width = (viewport.x - 2.0 * space::S12).clamp(1.0, 320.0);
-        let layout = |text: &str, font, color| {
+        let layout = |text: &str, font: egui::FontId, color| {
+            let heading = font.family == theme::semibold();
+            let leading = if heading { 1.3 } else { 1.45 };
+            let size = font.size;
             let mut job = egui::text::LayoutJob::simple(text.into(), font, color, width);
             job.halign = Align::Center;
+            job.sections[0].format.line_height = Some(size * leading);
+            if heading {
+                job.sections[0].format.extra_letter_spacing = -0.01 * size;
+            }
             ui.fonts_mut(|f| f.layout_job(job))
         };
         let title = layout(self.title, theme::title(), ink);
@@ -81,7 +88,7 @@ impl<'a> EmptyState<'a> {
                 .size()
                 .x
                 .ceil()
-                + 2.0 * space::BUTTON_PAD
+                + 2.0 * (space::BUTTON_PAD + 1.0)
         });
         let group_width = width;
         let height = 32.0
@@ -111,7 +118,7 @@ impl<'a> EmptyState<'a> {
             .show(ui, |ui| {
                 let canvas = vec2(
                     viewport.x.max(group_width + 2.0 * space::S12),
-                    viewport.y.max(height + 2.0 * space::S12),
+                    viewport.y.max(height),
                 );
                 ui.set_min_size(canvas);
                 let origin = ui.min_rect().min;

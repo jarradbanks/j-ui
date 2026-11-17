@@ -101,7 +101,7 @@ impl Demo {
 }
 
 fn muted(text: &str) -> RichText {
-    RichText::new(text).color(color::ink_3())
+    theme::text(text, theme::body()).color(color::ink_3())
 }
 
 /// A row as tall as its text, not as a control.
@@ -133,7 +133,8 @@ fn section(
     ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
         Panel::titled(title).show(ui, body);
     });
-    let header = Rect::from_min_size(rect.min, vec2(rect.width(), size::HEADER));
+    let inside = rect.shrink(1.0);
+    let header = Rect::from_min_size(inside.min, vec2(inside.width(), size::HEADER));
     let header = header.shrink2(vec2(space::INSET, 0.0));
     let layout = Layout::right_to_left(Align::Center);
     ui.scope_builder(UiBuilder::new().max_rect(header).layout(layout), extra);
@@ -145,8 +146,10 @@ fn new_badge(ui: &mut Ui) {
 
 fn card(ui: &mut Ui, width: f32, thumb: Color32, title: &str, text: &str, edited: &str) -> Rect {
     let inset = space::INSET as i8;
+    let width = width - 2.0;
     let response = Card::new().show(ui, |ui| {
         ui.spacing_mut().item_spacing.y = 0.0;
+        ui.spacing_mut().item_spacing.x = space::S8;
         ui.set_width(width);
         let (art, _) = ui.allocate_exact_size(vec2(width, 96.0), egui::Sense::hover());
         let top = CornerRadius {
@@ -164,7 +167,7 @@ fn card(ui: &mut Ui, width: f32, thumb: Color32, title: &str, text: &str, edited
         };
         egui::Frame::new().inner_margin(head).show(ui, |ui| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new(title).font(theme::title()));
+                ui.label(theme::text(title, theme::title()));
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     ui.add(Button::icon(icon::ELLIPSIS, "More"));
                 });
@@ -179,10 +182,15 @@ fn card(ui: &mut Ui, width: f32, thumb: Color32, title: &str, text: &str, edited
         egui::Frame::new().inner_margin(text_margin).show(ui, |ui| {
             ui.label(muted(text));
         });
-        let foot = egui::Margin::symmetric(inset, 8);
+        let foot = egui::Margin {
+            left: inset,
+            right: inset,
+            top: 9,
+            bottom: 8,
+        };
         egui::Frame::new().inner_margin(foot).show(ui, |ui| {
             ui.horizontal(|ui| {
-                ui.label(muted(edited).font(theme::small()));
+                ui.label(theme::text(edited, theme::small()).color(color::ink_3()));
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     ui.add(Button::secondary("Open"));
                     ui.add(Button::ghost("Share"));
@@ -227,15 +235,16 @@ fn recent_projects(ui: &mut Ui, d: &mut Demo) {
 }
 
 fn typography(ui: &mut Ui) {
-    let semibold = |text: &str, font| RichText::new(text).font(font);
+    let semibold = |text: &str, font| theme::text(text, font);
     between(ui, semibold("Display", theme::display()), "SemiBold");
     between(ui, semibold("Headline", theme::headline()), "SemiBold");
     between(ui, semibold("Title", theme::title()), "SemiBold");
-    let strong = RichText::new("Body Strong for buttons and tabs").font(theme::body_strong());
+    let strong = theme::text("Body Strong for buttons and tabs", theme::body_strong());
     between(ui, strong, "Medium");
-    let body = RichText::new("Body for labels, values and descriptions");
+    let body = theme::text("Body for labels, values and descriptions", theme::body());
     between(ui, body, "Regular");
-    let small = muted("Small for captions and column headers").font(theme::small());
+    let small =
+        theme::text("Small for captions and column headers", theme::small()).color(color::ink_3());
     between(ui, small, "Regular");
     text_row(ui, |ui| {
         ui.add(Timecode::new(30 * 84 + 8, 30));
@@ -334,9 +343,7 @@ fn selection(ui: &mut Ui, d: &mut Demo) {
     ui.horizontal(|ui| {
         ui.add(Checkbox::new(&mut d.looped, "Loop Playback"));
         ui.add(Checkbox::new(&mut d.mute, "Mute"));
-        ui.spacing_mut().item_spacing.x = space::S8;
-        ui.add(Toggle::new(&mut d.auto_save, "Auto Save"));
-        ui.label("Auto Save");
+        ui.add(Toggle::new(&mut d.auto_save, "Auto Save").show_label());
     });
 }
 
@@ -401,7 +408,7 @@ fn table(ui: &mut Ui, d: &mut Demo) {
 fn dialog(ui: &mut Ui) {
     dialog::frame(ui.style()).show(ui, |ui| {
         ui.set_width(ui.available_width());
-        ui.label(RichText::new("Delete Clip").font(theme::title()));
+        ui.label(theme::text("Delete Clip", theme::title()));
         ui.label(muted(
             "The clip is removed from the timeline. The source file stays on disk.",
         ));
@@ -436,9 +443,10 @@ fn chrome(ui: &mut Ui, d: &mut Demo) {
     let layout = Layout::right_to_left(Align::Center);
     ui.scope_builder(UiBuilder::new().max_rect(bar).layout(layout), |ui| {
         ui.add(Segmented::new(&mut d.theme, &["Dark", "Light"]));
+        ui.add(j_ui::widgets::Select::new("Figtree").width(160.0));
         ui.add(Segmented::new(&mut 2, &["Current", "Line", "Soft"]));
         ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-            ui.label(RichText::new("Component Styles").font(theme::headline()));
+            ui.label(theme::text("Component Styles", theme::headline()));
         });
     });
 }
@@ -457,7 +465,7 @@ fn page(ui: &mut Ui, d: &mut Demo) {
     };
     let none = |_: &mut Ui| {};
 
-    let (a, b) = row(584.0);
+    let (a, b) = row(585.0);
     let add = |ui: &mut Ui| {
         ui.add(Button::primary("New Project").with_icon(icon::PLUS));
     };
@@ -465,7 +473,7 @@ fn page(ui: &mut Ui, d: &mut Demo) {
         recent_projects(ui, d)
     });
 
-    let (a, b) = row(316.0);
+    let (a, b) = row(317.0);
     section(ui, a, "Typography", none, typography);
     section(ui, b, "Spacing", none, spacing);
 
@@ -494,7 +502,7 @@ fn page(ui: &mut Ui, d: &mut Demo) {
         ));
     });
 
-    let (a, b) = row(242.0);
+    let (a, b) = row(243.0);
     section(ui, a, "Slider and Progress", new_badge, |ui| {
         slider_and_progress(ui, d);
     });
@@ -513,7 +521,7 @@ fn page(ui: &mut Ui, d: &mut Demo) {
     section(ui, a, "Table", new_badge, |ui| table(ui, d));
     section(ui, b, "Dialog", none, dialog);
 
-    let (a, _) = row(227.0);
+    let (a, _) = row(228.0);
     section(ui, a, "Empty State", none, |ui| {
         let help = "Import media to start a project.";
         let _ = EmptyState::new(icon::FOLDER, "No Clips Yet", help)
@@ -565,11 +573,12 @@ fn components_snapshots() {
     }
     let mut results = SnapshotResults::new();
     for (name, palette) in themes::BUILT_IN {
-        let mut h = harness(palette, 1.0, true);
-        results.add(h.try_snapshot(format!("components_{name}")));
+        for scale in [1.0, 1.5] {
+            let mut h = harness(palette, scale, true);
+            let suffix = if scale == 1.0 { "" } else { "_1.5x" };
+            results.add(h.try_snapshot(format!("components_{name}{suffix}")));
+        }
     }
-    let mut h = harness(themes::DARK, 1.5, true);
-    results.add(h.try_snapshot("components_dark_1.5x"));
     results.unwrap();
 }
 

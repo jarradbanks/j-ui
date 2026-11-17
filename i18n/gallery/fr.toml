@@ -9,6 +9,7 @@ disabled = "Désactivé"
 loading_error = "Chargement / Erreur"
 
 [panel]
+components = "Composants"
 widgets = "Contrôles"
 effects = "Effets"
 text = "Texte"
@@ -21,7 +22,7 @@ audio = "Audio"
 markers = "Marqueurs"
 history = "Historique"
 captions = "Sous-titres"
-overflow = "Les onglets de moins de 64 px passent dans le menu à chevron."
+overflow = "Les onglets qui ne tiennent pas passent dans le menu à chevron."
 type_and_colour = "Typographie et couleur"
 
 [row]
@@ -48,6 +49,8 @@ slider = "Curseur"
 keyframe = "Image clé"
 
 [demo]
+no_matches = "Aucun élément correspondant"
+dismiss = "Fermer"
 delete = "Supprimer"
 export = "Exporter"
 width_prefix = "L"
@@ -71,12 +74,12 @@ ochre = "Ocre"
 green = "Vert"
 
 [type]
-display = "Affichage 22"
-headline = "Gros titre 16"
-title = "Titre 14"
-body_strong = "Corps gras 12"
-body = "Corps 12 · 0123456789 reste immobile"
-small = "Petit 10 · indication de raccourci"
+display = "Affichage 28"
+headline = "Gros titre 20"
+title = "Titre 16"
+body_strong = "Corps gras 14"
+body = "Corps 14, 0123456789 reste immobile"
+small = "Petit 12, indication de raccourci"
 
 [clip]
 video = "Vidéo"

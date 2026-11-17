@@ -1,4 +1,4 @@
-//! Design tokens from [jvid's design specification](https://github.com/jarradbanks/jvid/blob/main/DESIGN.md) ("The Quiet Frame"). Sizes are egui points.
+//! Soft component tokens. Sizes are egui points; the profile is documented in `DESIGN.md`.
 
 use egui::Color32;
 
@@ -24,6 +24,11 @@ pub mod color {
 
     pub const VIEWER: Color32 = hex(0x040404);
     pub const WHITE: Color32 = Color32::WHITE;
+
+    /// Soft control and selection fill, with readable text in high-contrast palettes.
+    pub fn selection_fill() -> Color32 {
+        crate::themes::current().selection_fill()
+    }
 
     macro_rules! themed {
         ($($name:ident),*) => {$(

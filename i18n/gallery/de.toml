@@ -9,6 +9,7 @@ disabled = "Deaktiviert"
 loading_error = "Laden / Fehler"
 
 [panel]
+components = "Komponenten"
 widgets = "Widgets"
 effects = "Effekte"
 text = "Text"
@@ -21,7 +22,7 @@ audio = "Audio"
 markers = "Marker"
 history = "Verlauf"
 captions = "Untertitel"
-overflow = "Tabs unter 64 px wandern ins Chevron-Menü."
+overflow = "Tabs ohne Platz erscheinen im Pfeilmenü."
 type_and_colour = "Schrift und Farbe"
 
 [row]
@@ -48,6 +49,8 @@ slider = "Schieberegler"
 keyframe = "Keyframe"
 
 [demo]
+no_matches = "Keine passenden Einträge"
+dismiss = "Schließen"
 delete = "Löschen"
 export = "Exportieren"
 width_prefix = "B"
@@ -71,12 +74,12 @@ ochre = "Ocker"
 green = "Grün"
 
 [type]
-display = "Display 22"
-headline = "Überschrift 16"
-title = "Titel 14"
-body_strong = "Fließtext fett 12"
-body = "Fließtext 12 · 0123456789 bleibt stehen"
-small = "Klein 10 · Tastenhinweis"
+display = "Display 28"
+headline = "Überschrift 20"
+title = "Titel 16"
+body_strong = "Fließtext fett 14"
+body = "Fließtext 14, 0123456789 bleibt stehen"
+small = "Klein 12, Tastenhinweis"
 
 [clip]
 video = "Video"

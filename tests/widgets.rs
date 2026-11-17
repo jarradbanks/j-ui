@@ -52,9 +52,9 @@ fn slider_orientation_pointer_keyboard_steps_and_disabled() {
         assert_eq!(
             rect.size(),
             if vertical {
-                vec2(size::THUMB + 4.0, 160.0)
+                vec2(size::CONTROL, 160.0)
             } else {
-                vec2(160.0, size::THUMB + 4.0)
+                vec2(160.0, size::CONTROL)
             }
         );
         h.get_by_label("Size").click();

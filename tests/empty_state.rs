@@ -5,6 +5,7 @@ use egui_kittest::kittest::Queryable;
 use j_ui::empty_state::EmptyState;
 use j_ui::test_support::install_theme;
 use j_ui::theme::icon;
+use j_ui::tokens::font;
 
 struct State {
     body: Rect,

@@ -59,33 +59,40 @@ impl Widget for Autocomplete<'_> {
         const SHOWN: usize = 5;
         let id = ui.next_auto_id().with("autocomplete");
         let popup = id.with("suggestions");
-        let query = self.text.trim().to_lowercase();
-        let matches: Vec<(&str, std::ops::Range<usize>)> = self
-            .options
-            .iter()
-            .filter_map(|option| Some((*option, find(option, &query)?)))
-            .take(SHOWN)
-            .collect();
+        let suggest = |text: &str| {
+            let query = text.trim().to_lowercase();
+            self.options
+                .iter()
+                .filter_map(|option| Some((*option, find(option, &query)?)))
+                .take(SHOWN)
+                .collect::<Vec<_>>()
+        };
+        let mut matches = suggest(self.text);
         let last = matches.len().saturating_sub(1);
         let mut active = ui
             .data(|d| d.get_temp::<usize>(popup))
             .unwrap_or(0)
             .min(last);
         let mut picked = None;
+        let mut dismissed = false;
         // Taken before the editor sees them: it would move the caret and give up focus.
-        if egui::Popup::is_id_open(ui.ctx(), popup) && ui.memory(|m| m.has_focus(id)) {
+        if ui.memory(|m| m.has_focus(id)) || egui::Popup::is_id_open(ui.ctx(), popup) {
             let pressed = |key| ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, key));
             if pressed(Key::ArrowDown) {
+                egui::Popup::open_id(ui.ctx(), popup);
                 active = if active == last { 0 } else { active + 1 };
             }
             if pressed(Key::ArrowUp) {
+                egui::Popup::open_id(ui.ctx(), popup);
                 active = active.checked_sub(1).unwrap_or(last);
             }
             if pressed(Key::Escape) {
                 egui::Popup::close_id(ui.ctx(), popup);
+                ui.memory_mut(|m| m.request_focus(id));
+                dismissed = true;
             }
-            if !matches.is_empty() && pressed(Key::Enter) {
-                picked = Some(matches[active].0);
+            if egui::Popup::is_id_open(ui.ctx(), popup) && pressed(Key::Enter) {
+                picked = matches.get(active).map(|(option, _)| *option);
             }
         }
         let mut input = TextInput::search(self.text).id(id).width(self.width);
@@ -95,10 +102,13 @@ impl Widget for Autocomplete<'_> {
         let mut response = ui.add(input);
         if response.changed() {
             active = 0;
+            matches = suggest(self.text);
         }
-        if response.gained_focus() || response.changed() {
+        if !dismissed && (response.gained_focus() || response.changed()) {
             egui::Popup::open_id(ui.ctx(), popup);
         }
+        let wanted = matches.len().max(1) as f32 * size::CONTROL;
+        let (align, max_height) = menu_place(response.rect, ui.ctx().content_rect(), wanted);
         egui::Popup::from_response(&response)
             .id(popup)
             .open_memory(None)
@@ -106,27 +116,28 @@ impl Widget for Autocomplete<'_> {
             .close_behavior(egui::PopupCloseBehavior::IgnoreClicks)
             .width(response.rect.width())
             .gap(space::S4)
+            .align(align)
+            .align_alternatives(&[])
             .show(|ui| {
                 ui.spacing_mut().item_spacing.y = 0.0;
-                for (i, (option, hit)) in matches.iter().enumerate() {
-                    let row = MenuRow::suggestion(option, hit.clone()).lit(i == active);
-                    if ui.add(row).clicked() {
-                        picked = Some(*option);
-                    }
-                }
-                if matches.is_empty() && !self.empty.is_empty() {
-                    let size = vec2(ui.available_width(), size::CONTROL);
-                    let (row, _) = ui.allocate_exact_size(size, Sense::hover());
-                    let empty = fit_text(
-                        ui,
-                        self.empty,
-                        theme::body(),
-                        color::ink_3(),
-                        row.width() - 2.0 * space::FIELD_PAD,
-                    );
-                    let x = row.left() + space::FIELD_PAD;
-                    paint_left(ui, x, row.center().y, empty, color::ink_3());
-                }
+                egui::ScrollArea::vertical()
+                    .max_height(max_height.max(size::CONTROL))
+                    .show(ui, |ui| {
+                        for (i, (option, hit)) in matches.iter().enumerate() {
+                            let row = MenuRow::suggestion(option, hit.clone()).lit(i == active);
+                            if ui.add(row).clicked() {
+                                picked = Some(*option);
+                            }
+                        }
+                        if matches.is_empty() && !self.empty.is_empty() {
+                            let size = vec2(ui.available_width(), size::CONTROL);
+                            let (row, _) = ui.allocate_exact_size(size, Sense::hover());
+                            let empty = fit_text(ui, self.empty, theme::body(), color::ink_3(), row.width() - 2.0 * space::FIELD_PAD);
+                            let x = row.left() + space::FIELD_PAD;
+                            let rect = Rect::from_min_size(pos2(x, row.center().y - empty.size().y / 2.0), empty.size());
+                            place(ui, rect, egui::Label::new(empty).selectable(false));
+                        }
+                    });
             });
         ui.data_mut(|d| d.insert_temp(popup, active));
         if let Some(option) = picked {
@@ -139,6 +150,11 @@ impl Widget for Autocomplete<'_> {
             // wait for its release, which picks the row above.
             egui::Popup::close_id(ui.ctx(), popup);
         }
+        let expanded = egui::Popup::is_id_open(ui.ctx(), popup);
+        ui.ctx().accesskit_node_builder(response.id, |node| {
+            node.set_expanded(expanded);
+            node.set_has_popup(egui::accesskit::HasPopup::Listbox);
+        });
         response
     }
 }

@@ -114,7 +114,7 @@ impl<'a> Table<'a> {
             let r = ui.interact(line, response.id.with(index), Sense::click());
             let on = index == *self.selected;
             r.widget_info(|| {
-                WidgetInfo::selected(WidgetType::SelectableLabel, true, on, rows[index])
+                WidgetInfo::selected(WidgetType::SelectableLabel, r.enabled(), on, rows[index])
             });
             if r.clicked() && !on {
                 *self.selected = index;
@@ -123,8 +123,10 @@ impl<'a> Table<'a> {
             // Keyboard focus shows the hover fill, never a ring.
             if on || r.hovered() || r.has_focus() {
                 let corner = CornerRadius::same(radius::SMALL);
-                ui.painter()
-                    .set(fill, Shape::rect_filled(line, corner, color::border()));
+                ui.painter().set(
+                    fill,
+                    Shape::rect_filled(line, corner, color::selection_fill()),
+                );
             }
         }
         response
@@ -150,6 +152,7 @@ impl Card {
         // Top to bottom whatever row or grid the card sits in.
         egui::Frame::new()
             .fill(color::raised())
+            .inner_margin(1.0)
             .corner_radius(radius::PANEL)
             .show(ui, |ui| ui.vertical(add_contents).inner)
     }

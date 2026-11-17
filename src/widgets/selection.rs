@@ -152,6 +152,7 @@ pub struct Toggle<'a> {
     value: &'a mut bool,
     label: &'a str,
     state: State,
+    show_label: bool,
 }
 
 impl<'a> Toggle<'a> {
@@ -160,8 +161,15 @@ impl<'a> Toggle<'a> {
             value,
             label,
             state: State::Live,
+            show_label: false,
         }
     }
+    /// Includes the label in the 36-point click target, 8 points after the switch.
+    pub fn show_label(mut self) -> Self {
+        self.show_label = true;
+        self
+    }
+
     pub fn state(mut self, state: State) -> Self {
         self.state = state;
         self
@@ -171,7 +179,16 @@ impl<'a> Toggle<'a> {
 impl Widget for Toggle<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
         let size = vec2(2.0 * SELECTION_DIAMETER - 4.0, SELECTION_DIAMETER);
-        let (rect, mut response) = allocate(ui, size, self.state, Sense::click());
+        let desired = if self.show_label {
+            vec2(
+                size.x + space::S8 + text_width(ui, self.label, &theme::body()),
+                size::CONTROL,
+            )
+        } else {
+            size
+        };
+        let (row, mut response) = allocate(ui, desired, self.state, Sense::click());
+        let rect = Rect::from_center_size(pos2(row.left() + size.x / 2.0, row.center().y), size);
         if response.clicked() {
             *self.value = !*self.value;
             response.mark_changed();
@@ -187,21 +204,48 @@ impl Widget for Toggle<'_> {
         ui.ctx().accesskit_node_builder(response.id, |node| {
             node.set_role(egui::accesskit::Role::Switch)
         });
-        let fill = if *self.value {
+        let l = look(&response, self.state);
+        let contrast_outline = color::selection_fill() != color::border();
+        let fill = if l.disabled || (contrast_outline && !*self.value) {
+            color::selection_fill()
+        } else if *self.value {
             color::blue()
         } else {
             color::border_strong()
         };
         let half = rect.height() / 2.0;
         ui.painter().rect_filled(rect, half, fill);
+        if contrast_outline && !*self.value {
+            ui.painter()
+                .add(border(ui, rect, ROUND, color::border_strong()));
+        }
         let x = if *self.value {
             rect.right() - half
         } else {
             rect.left() + half
         };
+        let knob = if l.disabled {
+            color::ink_4()
+        } else {
+            Color32::WHITE
+        };
         ui.painter()
-            .circle_filled(pos2(x, rect.center().y), half - 2.0, Color32::WHITE);
-        if look(&response, self.state).focus {
+            .circle_filled(pos2(x, rect.center().y), half - 2.0, knob);
+        if self.show_label {
+            let ink = if l.disabled {
+                color::ink_4()
+            } else {
+                color::ink()
+            };
+            ui.painter().text(
+                pos2(rect.right() + space::S8, row.center().y),
+                Align2::LEFT_CENTER,
+                self.label,
+                theme::body(),
+                ink,
+            );
+        }
+        if l.focus {
             paint_focus(ui, rect, ROUND);
         }
         response
@@ -248,7 +292,12 @@ impl Widget for RadioGroup<'_> {
                 let (rect, response) = allocate(ui, size, pinned, Sense::click());
                 let on = i == *self.selected;
                 response.widget_info(|| {
-                    WidgetInfo::selected(WidgetType::RadioButton, response.enabled(), on, *option)
+                    WidgetInfo::selected(
+                        WidgetType::RadioButton,
+                        pinned != State::Disabled && response.enabled(),
+                        on,
+                        *option,
+                    )
                 });
                 if response.clicked() && !on {
                     *self.selected = i;

@@ -9,6 +9,7 @@ disabled = "Inaktiverad"
 loading_error = "Läser in / fel"
 
 [panel]
+components = "Komponenter"
 widgets = "Komponenter"
 effects = "Effekter"
 text = "Text"
@@ -21,7 +22,7 @@ audio = "Ljud"
 markers = "Markörer"
 history = "Historik"
 captions = "Bildtexter"
-overflow = "Flikar smalare än 64 px flyttas till menyn bakom vinkelpilen."
+overflow = "Flikar som inte får plats visas i pilmenyn."
 type_and_colour = "Text och färg"
 
 [row]
@@ -48,6 +49,8 @@ slider = "Skjutreglage"
 keyframe = "Nyckelbildruta"
 
 [demo]
+no_matches = "Inga matchande objekt"
+dismiss = "Stäng"
 delete = "Ta bort"
 export = "Exportera"
 width_prefix = "B"
@@ -71,12 +74,12 @@ ochre = "Ockra"
 green = "Grön"
 
 [type]
-display = "Display 22"
-headline = "Rubrik 16"
-title = "Titel 14"
-body_strong = "Brödtext fet 12"
-body = "Brödtext 12 · 0123456789 står still"
-small = "Liten 10 · kortkommandotips"
+display = "Display 28"
+headline = "Rubrik 20"
+title = "Titel 16"
+body_strong = "Brödtext fet 14"
+body = "Brödtext 14, 0123456789 står still"
+small = "Liten 12, kortkommandotips"
 
 [clip]
 video = "Video"

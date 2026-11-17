@@ -111,6 +111,21 @@ pub fn timecode() -> FontId {
     FontId::new(font::TIMECODE, medium())
 }
 
+/// Text with the suite's paragraph leading and tighter SemiBold headings.
+pub fn text(text: impl Into<String>, font: FontId) -> egui::RichText {
+    let heading = font.family == semibold();
+    let leading = match () {
+        _ if font.size >= crate::tokens::font::HEADLINE => 1.25,
+        _ if heading => 1.3,
+        _ => 1.45,
+    };
+    let spacing = if heading { -0.01 * font.size } else { 0.0 };
+    egui::RichText::new(text)
+        .line_height(Some(font.size * leading))
+        .extra_letter_spacing(spacing)
+        .font(font)
+}
+
 /// An 18px icon glyph.
 pub fn icon_font() -> FontId {
     FontId::new(size::ICON, FontFamily::Name("icons".into()))
@@ -271,7 +286,7 @@ pub fn visuals_with(p: &Palette) -> Visuals {
     // transparent, not absent, because `sync_hairlines` rewrites every width.
     let borderless = Stroke::new(1.0, Color32::TRANSPARENT);
     w.inactive.bg_fill = color.ground;
-    w.inactive.weak_bg_fill = color.border;
+    w.inactive.weak_bg_fill = color.selection_fill();
     w.inactive.bg_stroke = borderless;
     w.inactive.fg_stroke = Stroke::new(1.0, color.ink);
     w.hovered.bg_fill = color.ground;
@@ -316,6 +331,8 @@ pub fn visuals_with(p: &Palette) -> Visuals {
     v.popup_shadow = overlay;
     v.text_cursor.stroke = Stroke::new(1.0, color.light_blue);
     v.weak_text_color = Some(color.ink_3);
+    // Shared controls already choose Ink 4; applying an opacity fade would dim them twice.
+    v.disabled_alpha = 1.0;
     v.button_frame = true;
     v.collapsing_header_frame = false;
     v.indent_has_left_vline = false;

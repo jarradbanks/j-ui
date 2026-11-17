@@ -2,7 +2,7 @@
 //! backdrop, Title heading, right-aligned [`action_footer`]); [`Dialog`] is the
 //! ready-made confirm dialog built on it.
 
-use egui::{Align, Context, Frame, Id, Layout, Response, RichText, Ui};
+use egui::{Align, Context, Frame, Id, Layout, Response, Ui};
 
 use crate::theme;
 use crate::tokens::{color, radius, space};
@@ -96,7 +96,7 @@ pub fn modal<R>(
         .frame(frame(&ctx.global_style()))
         .show(ctx, |ui| {
             ui.set_width(width.min((ctx.content_rect().width() - 48.0).max(1.0)));
-            ui.label(RichText::new(title).font(theme::title()));
+            ui.label(theme::text(title, theme::title()));
             add_contents(ui)
         })
 }
@@ -121,7 +121,7 @@ impl Dialog<'_> {
         let previous_rect = ctx.memory(|m| m.area_rect(id));
         let width = if self.long { 640.0 } else { 360.0 };
         let modal = modal(ctx, id, self.title, width, |ui| {
-            let body = RichText::new(self.body).color(color::ink_3());
+            let body = theme::text(self.body, theme::body()).color(color::ink_3());
             if self.long {
                 let height = ctx.content_rect().height() * 0.6;
                 egui::ScrollArea::vertical()

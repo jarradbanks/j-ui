@@ -122,7 +122,8 @@ impl<'a> Panel<'a> {
         } else {
             size::HEADER
         };
-        let header = Rect::from_min_size(rect.min, vec2(rect.width(), height));
+        let inside = rect.shrink(1.0);
+        let header = Rect::from_min_size(inside.min, vec2(inside.width(), height));
 
         let mut action = None;
         let mut right = header.right() - space::INSET;
@@ -162,8 +163,8 @@ impl<'a> Panel<'a> {
         }
 
         let body = Rect::from_x_y_ranges(
-            rect.left() + space::INSET..=rect.right() - space::INSET,
-            header.bottom() + space::INSET..=rect.bottom() - space::INSET,
+            inside.left() + space::INSET..=inside.right() - space::INSET,
+            header.bottom() + space::INSET..=inside.bottom() - space::INSET,
         );
         let mut child = ui.new_child(UiBuilder::new().max_rect(body));
         child.set_clip_rect(body.intersect(ui.clip_rect()));

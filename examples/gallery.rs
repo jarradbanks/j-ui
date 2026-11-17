@@ -40,6 +40,8 @@ macro_rules! tr {
     };
 }
 
+mod components;
+
 fn main() -> eframe::Result {
     i18n::set_language(i18n::resolve(i18n::SYSTEM));
     eframe::run_native(
@@ -73,6 +75,7 @@ pub struct Gallery {
     motion: bool,
     mixed: bool,
     parent: bool,
+    components: components::Demo,
 }
 
 impl Gallery {
@@ -119,7 +122,7 @@ pub fn gallery(ui: &mut egui::Ui, g: &mut Gallery) {
                 let tabs = [
                     tr!("panel.widgets"),
                     tr!("panel.effects"),
-                    tr!("panel.text"),
+                    tr!("panel.components"),
                 ];
                 Panel::tabbed(&tabs, &mut tab)
                     .focused(true)
@@ -128,8 +131,12 @@ pub fn gallery(ui: &mut egui::Ui, g: &mut Gallery) {
                         (icon::ELLIPSIS, tr!("panel.more")),
                     ])
                     .show(ui, |ui| {
-                        egui::ScrollArea::vertical().show(ui, |ui| {
-                            if g.tab == 1 {
+                        let width = ui.available_width();
+                        egui::ScrollArea::both().show(ui, |ui| {
+                            if g.tab == 2 {
+                                ui.set_width(width);
+                                ui.vertical(|ui| components::show(ui, &mut g.components));
+                            } else if g.tab == 1 {
                                 selection(ui, g);
                             } else {
                                 states(ui, g);
@@ -140,7 +147,7 @@ pub fn gallery(ui: &mut egui::Ui, g: &mut Gallery) {
             });
             ui.vertical(|ui| {
                 ui.spacing_mut().item_spacing.y = space::GUTTER;
-                ui.allocate_ui(egui::vec2(360.0, 200.0), |ui| {
+                ui.allocate_ui(egui::vec2(360.0, 264.0), |ui| {
                     Panel::titled(tr!("panel.inspector")).show(ui, |ui| inspector(ui, g));
                 });
                 ui.allocate_ui(egui::vec2(360.0, 120.0), |ui| {
@@ -363,9 +370,9 @@ fn inspector(ui: &mut egui::Ui, g: &mut Gallery) {
 }
 
 fn type_and_colour(ui: &mut egui::Ui) {
-    ui.label(egui::RichText::new(tr!("type.display")).font(theme::display()));
-    ui.label(egui::RichText::new(tr!("type.headline")).font(theme::headline()));
-    ui.label(egui::RichText::new(tr!("type.title")).font(theme::title()));
+    ui.label(theme::text(tr!("type.display"), theme::display()));
+    ui.label(theme::text(tr!("type.headline"), theme::headline()));
+    ui.label(theme::text(tr!("type.title"), theme::title()));
     ui.label(egui::RichText::new(tr!("type.body_strong")).font(theme::body_strong()));
     ui.label(tr!("type.body"));
     ui.label(

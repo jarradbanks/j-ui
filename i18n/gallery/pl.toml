@@ -9,6 +9,7 @@ disabled = "Wyłączony"
 loading_error = "Wczytywanie / błąd"
 
 [panel]
+components = "Komponenty"
 widgets = "Kontrolki"
 effects = "Efekty"
 text = "Tekst"
@@ -21,7 +22,7 @@ audio = "Audio"
 markers = "Znaczniki"
 history = "Historia"
 captions = "Podpisy"
-overflow = "Karty węższe niż 64 px trafiają do menu ze strzałką."
+overflow = "Karty, które się nie mieszczą, trafiają do menu strzałki."
 type_and_colour = "Typografia i kolor"
 
 [row]
@@ -48,6 +49,8 @@ slider = "Suwak"
 keyframe = "Klatka kluczowa"
 
 [demo]
+no_matches = "Brak pasujących elementów"
+dismiss = "Zamknij"
 delete = "Usuń"
 export = "Eksportuj"
 width_prefix = "S"
@@ -71,12 +74,12 @@ ochre = "Ochra"
 green = "Zielony"
 
 [type]
-display = "Display 22"
-headline = "Nagłówek 16"
-title = "Tytuł 14"
-body_strong = "Tekst pogrubiony 12"
-body = "Tekst 12 · 0123456789 stoi w miejscu"
-small = "Mały 10 · podpowiedź skrótu"
+display = "Display 28"
+headline = "Nagłówek 20"
+title = "Tytuł 16"
+body_strong = "Tekst pogrubiony 14"
+body = "Tekst 14, 0123456789 stoi w miejscu"
+small = "Mały 12, podpowiedź skrótu"
 
 [clip]
 video = "Wideo"

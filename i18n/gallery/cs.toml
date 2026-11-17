@@ -9,6 +9,7 @@ disabled = "Zakázáno"
 loading_error = "Načítání / chyba"
 
 [panel]
+components = "Komponenty"
 widgets = "Ovládací prvky"
 effects = "Efekty"
 text = "Text"
@@ -21,7 +22,7 @@ audio = "Zvuk"
 markers = "Značky"
 history = "Historie"
 captions = "Popisky"
-overflow = "Karty užší než 64 px se přesunou do nabídky se šipkou."
+overflow = "Karty, které se nevejdou, jsou v nabídce šipky."
 type_and_colour = "Písmo a barva"
 
 [row]
@@ -48,6 +49,8 @@ slider = "Posuvník"
 keyframe = "Klíčový snímek"
 
 [demo]
+no_matches = "Žádné odpovídající položky"
+dismiss = "Zavřít"
 delete = "Odstranit"
 export = "Exportovat"
 width_prefix = "Š"
@@ -71,12 +74,12 @@ ochre = "Okrová"
 green = "Zelená"
 
 [type]
-display = "Titulní 22"
-headline = "Nadpis 16"
-title = "Titulek 14"
-body_strong = "Tučný text 12"
-body = "Text 12 · 0123456789 se nehýbe"
-small = "Malý 10 · nápověda ke zkratce"
+display = "Titulní 28"
+headline = "Nadpis 20"
+title = "Titulek 16"
+body_strong = "Tučný text 14"
+body = "Text 14, 0123456789 se nehýbe"
+small = "Malý 12, nápověda ke zkratce"
 
 [clip]
 video = "Video"

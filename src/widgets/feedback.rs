@@ -18,7 +18,7 @@ impl Tone {
     /// The tone's (fill, ink).
     fn colors(self) -> (Color32, Color32) {
         match self {
-            Self::Neutral => (color::border(), color::ink_2()),
+            Self::Neutral => (color::selection_fill(), color::ink_2()),
             Self::Info => (color::blue_soft(), color::light_blue()),
             Self::Success => (color::green_soft(), color::green()),
             Self::Warning => (color::amber_soft(), color::amber()),
@@ -126,7 +126,12 @@ struct Notice<'a> {
 impl Notice<'_> {
     /// The action's and the dismiss button's responses.
     fn show(self, ui: &mut Ui) -> (Option<Response>, Option<Response>) {
-        let [left, right, y] = self.pad;
+        let [mut left, mut right, mut y] = self.pad;
+        if self.floating {
+            left += 1.0;
+            right += 1.0;
+            y += 1.0;
+        }
         let action = self.action.map(Button::ghost);
         let action_width = action.as_ref().map_or(0.0, |b| b.desired_size(ui).x);
         let mut buttons = action_width;
@@ -138,12 +143,14 @@ impl Notice<'_> {
         }
         let width = ui.available_width();
         let room = width - left - right - size::ICON - space::S8 - buttons;
-        let message = ui.painter().layout(
+        let mut job = LayoutJob::simple(
             self.message.to_owned(),
             theme::body(),
             color::ink(),
             room.max(1.0),
         );
+        job.sections[0].format.line_height = Some(crate::tokens::font::BODY * 1.45);
+        let message = ui.fonts_mut(|fonts| fonts.layout_job(job));
         let height = (size::CONTROL + 2.0 * y).max(message.size().y + 2.0 * y);
         let (rect, _) = allocate(ui, vec2(width, height), State::Live, Sense::hover());
         let corner = CornerRadius::same(self.corner);
@@ -176,7 +183,8 @@ impl Notice<'_> {
                 Vec2::splat(size::CONTROL),
             );
             x -= space::S8;
-            place(ui, slot, Button::icon(icon::X, name)).on_hover_text(name)
+            let button = Button::icon(icon::X, name).ink(self.icon_ink);
+            place(ui, slot, button).on_hover_text(name)
         });
         let acted = action.map(|button| {
             let slot = Rect::from_min_size(

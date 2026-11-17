@@ -179,7 +179,7 @@ fn title_and_content_start_at_the_inset() {
     }
     for ppp in SCALES {
         let s = Shot::take(ppp, Mode::Title, false);
-        let inset = s.px(ORIGIN + space::INSET);
+        let inset = s.px(ORIGIN + 1.0 + space::INSET);
         let x = s.px(ORIGIN) + 1..s.px(ORIGIN + W / 2.0);
         let header = s.ink_box(x.clone(), s.header_rows());
         let content = s.ink_box(x, s.px(ORIGIN + size::HEADER) + 1..s.px(ORIGIN + H) - 1);
@@ -202,13 +202,17 @@ fn tabs_start_at_the_inset_with_the_active_one_underlined() {
     for ppp in SCALES {
         let s = Shot::take(ppp, Mode::Tabs, false);
         // The underline is the header's last 2pt, in Ink, as wide as the active label.
-        let y = s.px(ORIGIN + size::HEADER - 1.0);
+        let y = s.px(ORIGIN + size::HEADER);
         let line: Vec<u32> = (0..s.width)
             .filter(|&x| near(s.at(x, y), color::ink()))
             .collect();
         let (x0, x1) = (line[0], *line.last().unwrap());
         assert_eq!(line.len() as u32, x1 - x0 + 1, "{ppp}x one unbroken line");
-        assert_eq!(x0, s.px(ORIGIN + space::INSET), "{ppp}x underline start");
+        assert_eq!(
+            x0,
+            s.px(ORIGIN + 1.0 + space::INSET),
+            "{ppp}x underline start"
+        );
         let label = s.ink_box(x0..x1 + 1, s.header_rows());
         let slack = s.px(1.5);
         assert!(

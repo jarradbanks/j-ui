@@ -9,6 +9,7 @@ disabled = "Inhabilitat"
 loading_error = "S'està carregant / Error"
 
 [panel]
+components = "Components"
 widgets = "Controls"
 effects = "Efectes"
 text = "Text"
@@ -21,7 +22,7 @@ audio = "Àudio"
 markers = "Marcadors"
 history = "Historial"
 captions = "Subtítols"
-overflow = "Les pestanyes de menys de 64 px passen al menú desplegable."
+overflow = "Les pestanyes que no hi caben passen al menú de la fletxa."
 type_and_colour = "Tipografia i color"
 
 [row]
@@ -48,6 +49,8 @@ slider = "Control lliscant"
 keyframe = "Fotograma clau"
 
 [demo]
+no_matches = "Cap element coincident"
+dismiss = "Tanca"
 delete = "Suprimeix"
 export = "Exporta"
 width_prefix = "A"
@@ -71,12 +74,12 @@ ochre = "Ocre"
 green = "Verd"
 
 [type]
-display = "Portada 22"
-headline = "Titular 16"
-title = "Títol 14"
-body_strong = "Cos destacat 12"
-body = "Cos 12 · 0123456789 no es mou"
-small = "Petit 10 · indicació de drecera"
+display = "Portada 28"
+headline = "Titular 20"
+title = "Títol 16"
+body_strong = "Cos destacat 14"
+body = "Cos 14, 0123456789 no es mou"
+small = "Petit 12, indicació de drecera"
 
 [clip]
 video = "Vídeo"

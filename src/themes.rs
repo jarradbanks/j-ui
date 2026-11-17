@@ -249,6 +249,14 @@ pub fn load(path: &Path) -> Result<Palette, String> {
 }
 
 impl Palette {
+    /// Soft control and selection fill; high-contrast borders stay reserved for outlines.
+    pub fn selection_fill(&self) -> Color32 {
+        if crate::tokens::contrast(self.ink, self.border) < 4.5 {
+            return self.raised;
+        }
+        self.border
+    }
+
     pub fn from_toml(s: &str) -> Result<Self, toml::de::Error> {
         toml::from_str(s)
     }
@@ -428,6 +436,11 @@ mod tests {
         let bundled = BUNDLED.map(|(name, text)| (name, Palette::from_toml(text).unwrap()));
         for (name, p) in BUILT_IN.into_iter().chain(bundled) {
             assert_eq!(Palette::from_toml(&p.to_toml()).unwrap(), p, "{name}");
+            assert!(
+                contrast(p.ink, p.selection_fill()) >= 4.5,
+                "{name}: selection text"
+            );
+            assert_ne!(p.ink_4, p.selection_fill(), "{name}: visible disabled text");
             for (fg, what) in [(p.ink, "ink"), (p.ink_3, "ink_3"), (p.light_blue, "link")] {
                 let r = contrast(fg, p.panel);
                 assert!(r >= 4.5, "{name}: {what} on panel is {r:.2}:1");

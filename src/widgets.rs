@@ -55,7 +55,7 @@ struct Look {
 }
 
 fn look(response: &Response, pinned: State) -> Look {
-    match pinned {
+    let mut resolved = match pinned {
         State::Live => Look {
             hover: response.hovered(),
             pressed: response.is_pointer_button_down_on(),
@@ -68,16 +68,19 @@ fn look(response: &Response, pinned: State) -> Look {
             focus: s == State::Focus,
             disabled: s == State::Disabled,
         },
-    }
+    };
+    resolved.disabled |= !response.enabled();
+    resolved.focus &= !resolved.disabled;
+    resolved
 }
 
-/// Fades a colour towards its hover value over 100ms.
+/// Fades a colour towards its hover value over 120ms.
 fn hover_fade(ui: &Ui, id: Id, hover: bool, rest: Color32, hovered: Color32) -> Color32 {
     // No fade when the app turns animation off, as Reduce Motion does.
     let time = if ui.style().animation_time == 0.0 {
         0.0
     } else {
-        0.1
+        0.12
     };
     let t = ui
         .ctx()
@@ -109,9 +112,9 @@ pub fn focus_ring(rect: Rect, corner: u8) -> Shape {
 /// Paints [`focus_ring`] up to its width past the parent's clip, so a control at a clipped
 /// edge keeps its whole ring.
 fn paint_focus(ui: &Ui, rect: Rect, corner: u8) {
-    ui.painter()
-        .with_clip_rect(ui.clip_rect().expand(RING))
-        .add(focus_ring(rect, corner));
+    let mut painter = ui.painter().clone();
+    painter.set_clip_rect(ui.clip_rect().expand(RING + 1.0 / ui.pixels_per_point()));
+    painter.add(focus_ring(rect, corner));
 }
 
 /// Adds `widget` centred in `rect`, inside a control that has already allocated it. Unlike
@@ -304,7 +307,7 @@ impl<'a> Button<'a> {
             self.label.to_owned(),
             theme::body_strong(),
             Color32::WHITE,
-            (self.wrap_width - 2.0 * space::BUTTON_PAD - icon).max(1.0),
+            (self.wrap_width - 2.0 * (space::BUTTON_PAD + 1.0) - icon).max(1.0),
         )
     }
 
@@ -323,7 +326,7 @@ impl<'a> Button<'a> {
         let width = if self.icon_only {
             side
         } else {
-            2.0 * space::BUTTON_PAD + icon + label.size().x
+            2.0 * (space::BUTTON_PAD + 1.0) + icon + label.size().x
         };
         let height = if self.icon_only {
             side
@@ -349,12 +352,13 @@ impl Widget for Button<'_> {
             } else {
                 0.0
             };
-        let pad = ((desired.x - 2.0 * space::BUTTON_PAD - content_width).floor() / 2.0).max(0.0);
+        let pad =
+            ((desired.x - 2.0 * (space::BUTTON_PAD + 1.0) - content_width).floor() / 2.0).max(0.0);
         let (rect, response) = allocate(ui, desired, self.state, Sense::click());
         response.widget_info(|| {
             WidgetInfo::labeled(
                 WidgetType::Button,
-                self.state != State::Disabled,
+                self.state != State::Disabled && response.enabled(),
                 self.label,
             )
         });
@@ -365,8 +369,7 @@ impl Widget for Button<'_> {
         let id = response.id;
         // Keyboard focus shows the hover look, never a ring.
         let (fill, ink) = match self.kind {
-            ButtonKind::Ghost if l.disabled => (Color32::TRANSPARENT, color::ink_4()),
-            _ if l.disabled => (color::border(), color::ink_4()),
+            _ if l.disabled => (color::selection_fill(), color::ink_4()),
             ButtonKind::Primary if l.pressed => (color::BLUE_PRESSED, color::WHITE),
             ButtonKind::Primary => {
                 let lit = l.hover || l.focus;
@@ -375,14 +378,14 @@ impl Widget for Button<'_> {
             }
             ButtonKind::Secondary => {
                 let lit = l.hover || l.pressed;
-                let fill = hover_fade(ui, id, lit, color::border(), color::raised());
+                let fill = hover_fade(ui, id, lit, color::selection_fill(), color::raised());
                 (fill, color::ink())
             }
             ButtonKind::Destructive => (color::red_soft(), color::red()),
             ButtonKind::Ghost => {
                 let lit = l.hover || l.pressed || self.on;
                 let rest = if l.focus {
-                    color::border()
+                    color::selection_fill()
                 } else {
                     Color32::TRANSPARENT
                 };
@@ -404,7 +407,7 @@ impl Widget for Button<'_> {
         ui.painter()
             .rect_filled(rect, CornerRadius::same(corner), fill);
         let mut x = if has_label {
-            rect.left() + space::BUTTON_PAD + pad
+            rect.left() + space::BUTTON_PAD + 1.0 + pad
         } else {
             rect.center().x - size::ICON / 2.0
         };
@@ -441,6 +444,7 @@ fn paint_field(ui: &Ui, slot: egui::layers::ShapeIdx, rect: Rect, l: Look, error
         _ if l.disabled => None,
         _ if error => Some(color::red()),
         _ if focus => Some(color::blue()),
+        _ if color::selection_fill() != color::border() => Some(color::border()),
         _ => None,
     };
     shapes.extend(stroke.map(|c| border(ui, rect, radius::CONTROL, c)));
@@ -452,7 +456,7 @@ fn paint_field(ui: &Ui, slot: egui::layers::ShapeIdx, rect: Rect, l: Look, error
 
 /// Paints an optional prefix (Ink 3) at the field's left padding; returns where the value starts.
 fn paint_prefix(ui: &Ui, rect: Rect, prefix: Option<&str>, glyph: Option<&str>) -> f32 {
-    let mut x = rect.left() + space::FIELD_PAD;
+    let mut x = rect.left() + space::FIELD_PAD + 1.0;
     let y = rect.center().y;
     if let Some(glyph) = glyph {
         paint_icon(
@@ -479,11 +483,7 @@ fn paint_prefix(ui: &Ui, rect: Rect, prefix: Option<&str>, glyph: Option<&str>) 
 /// Shows an error message in Red Small under a field.
 fn error_line(ui: &mut Ui, error: Option<&str>) {
     if let Some(message) = error {
-        ui.label(
-            egui::RichText::new(message)
-                .font(theme::small())
-                .color(color::red()),
-        );
+        ui.label(theme::text(message, theme::small()).color(color::red()));
     }
 }
 
@@ -614,7 +614,7 @@ impl Widget for TextInput<'_> {
                         label,
                     )
                 });
-            let mut right = clear.map_or(rect.right() - space::FIELD_PAD, |(r, _)| {
+            let mut right = clear.map_or(rect.right() - space::FIELD_PAD - 1.0, |(r, _)| {
                 r.left() - space::S4
             });
             if let Some(suffix) = self.suffix {
@@ -955,7 +955,10 @@ impl Widget for DragField<'_> {
 /// tooltip itself. Translations run long, and the layout copes rather than the translator.
 /// Show the full text on hover with [`hover_full`] or [`paint_fit`].
 pub fn fit_text(ui: &Ui, text: &str, font: FontId, color: Color32, width: f32) -> Arc<Galley> {
-    let mut job = LayoutJob::simple_singleline(text.to_owned(), font, color);
+    let mut job = LayoutJob::simple_singleline(text.to_owned(), font.clone(), color);
+    if font.family == theme::semibold() {
+        job.sections[0].format.extra_letter_spacing = -0.01 * font.size;
+    }
     job.wrap = TextWrapping::truncate_at_width(width.max(0.0));
     ui.fonts_mut(|f| f.layout_job(job))
 }
@@ -1050,7 +1053,11 @@ impl<'a> Select<'a> {
             Sense::click(),
         );
         response.widget_info(|| {
-            WidgetInfo::labeled(WidgetType::ComboBox, response.enabled(), self.current)
+            WidgetInfo::labeled(
+                WidgetType::ComboBox,
+                self.state != State::Disabled && response.enabled(),
+                self.current,
+            )
         });
         let mut l = look(&response, self.state);
         // An open menu keeps the field's focus look.
@@ -1067,7 +1074,7 @@ impl<'a> Select<'a> {
         } else {
             color::ink_3()
         };
-        let chevron_x = rect.right() - space::FIELD_PAD - size::ICON / 2.0;
+        let chevron_x = rect.right() - space::FIELD_PAD - 1.0 - size::ICON / 2.0;
         let left = paint_prefix(ui, rect, None, self.glyph);
         let room = chevron_x - size::ICON / 2.0 - space::S8 - left;
         let text = fit_text(ui, self.current, theme::body(), ink, room);
@@ -1167,6 +1174,50 @@ impl Widget for Dropdown<'_> {
         }
         .show(ui);
         let rect = response.rect;
+        let popup_id = egui::Popup::default_response_id(&response);
+        let was_open = egui::Popup::is_id_open(ui.ctx(), popup_id);
+        let enabled = response.enabled() && self.state != State::Disabled;
+        let mut active = ui
+            .data(|d| d.get_temp::<usize>(popup_id))
+            .unwrap_or(*self.selected);
+        let last = self.options.len().saturating_sub(1);
+        active = active.min(last);
+        let mut focus_option = !was_open && response.clicked();
+        if enabled && (was_open || response.has_focus()) {
+            ui.memory_mut(|m| {
+                if let Some(focused) = m.focused() {
+                    m.set_focus_lock_filter(
+                        focused,
+                        egui::EventFilter {
+                            vertical_arrows: true,
+                            ..Default::default()
+                        },
+                    );
+                }
+            });
+            let pressed = |key| ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, key));
+            let down = pressed(Key::ArrowDown);
+            let up = pressed(Key::ArrowUp);
+            if down || up {
+                active = match () {
+                    _ if !was_open => (*self.selected).min(last),
+                    _ if down => (active + 1).min(last),
+                    _ => active.saturating_sub(1),
+                };
+                egui::Popup::open_id(ui.ctx(), popup_id);
+                focus_option = true;
+            }
+            if was_open && pressed(Key::Escape) {
+                egui::Popup::close_id(ui.ctx(), popup_id);
+                response.request_focus();
+            }
+        }
+        if !enabled {
+            egui::Popup::close_id(ui.ctx(), popup_id);
+        }
+        if focus_option && !was_open {
+            active = (*self.selected).min(last);
+        }
         let screen = ui.ctx().content_rect();
         let bounds = self.bounds.map_or(screen, |b| b.intersect(screen));
         let wanted = self.options.len() as f32 * size::CONTROL;
@@ -1183,13 +1234,28 @@ impl Widget for Dropdown<'_> {
                     .show(ui, |ui| {
                         for (i, option) in self.options.iter().enumerate() {
                             let r = ui.add(MenuRow::option(option, i == *self.selected));
+                            if focus_option && i == active {
+                                r.request_focus();
+                                r.scroll_to_me(None);
+                            }
+                            if !focus_option && r.has_focus() {
+                                active = i;
+                            }
                             if r.clicked() {
-                                *self.selected = i;
-                                response.mark_changed();
+                                if *self.selected != i {
+                                    *self.selected = i;
+                                    response.mark_changed();
+                                }
+                                ui.close();
+                                response.request_focus();
                             }
                         }
                     });
             });
+        ui.data_mut(|d| d.insert_temp(popup_id, active));
+        let expanded = egui::Popup::is_id_open(ui.ctx(), popup_id);
+        ui.ctx()
+            .accesskit_node_builder(response.id, |node| node.set_expanded(expanded));
         if elided && popup.is_none() {
             response = response.on_hover_text(current);
         }
@@ -1302,8 +1368,11 @@ impl Widget for MenuRow<'_> {
             let enabled = response.enabled();
             let lit = enabled && (self.lit || response.hovered() || response.has_focus());
             if lit {
-                ui.painter()
-                    .rect_filled(rect, CornerRadius::same(radius::SMALL), color::border());
+                ui.painter().rect_filled(
+                    rect,
+                    CornerRadius::same(radius::SMALL),
+                    color::selection_fill(),
+                );
             }
             let option = self.slot == CheckSlot::Trailing;
             let ink = match () {
@@ -1454,7 +1523,7 @@ impl Widget for Segmented<'_> {
         let (pad, gap, side) = if self.pills {
             (0.0, space::S4, space::BUTTON_PAD)
         } else {
-            (2.0, 2.0, space::BUTTON_PAD - 2.0)
+            (3.0, 2.0, space::BUTTON_PAD - 2.0)
         };
         let mut widths: Vec<f32> = self
             .options
@@ -1492,7 +1561,7 @@ impl Widget for Segmented<'_> {
                 .rect_filled(rect, CornerRadius::same(radius::CONTROL), track);
         }
         let (corner, selected_fill) = if self.pills {
-            ((self.height / 2.0) as u8, color::border())
+            ((self.height / 2.0) as u8, color::selection_fill())
         } else {
             (radius::SMALL, color::raised())
         };
@@ -1550,7 +1619,7 @@ impl Widget for Segmented<'_> {
             let fill = match () {
                 _ if l.disabled => Color32::TRANSPARENT,
                 _ if on => selected_fill,
-                _ if l.focus => color::border(),
+                _ if l.focus => color::selection_fill(),
                 _ => Color32::TRANSPARENT,
             };
             ui.painter()
@@ -1665,7 +1734,12 @@ impl Widget for Checkbox<'_> {
             response.mark_changed();
         }
         response.widget_info(|| {
-            WidgetInfo::selected(WidgetType::Checkbox, true, *self.checked, self.label)
+            WidgetInfo::selected(
+                WidgetType::Checkbox,
+                self.state != State::Disabled && response.enabled(),
+                *self.checked,
+                self.label,
+            )
         });
         let l = look(&response, self.state);
         let ppp = ui.pixels_per_point();
@@ -2028,7 +2102,8 @@ impl Widget for Slider<'_> {
         };
         if l.focus {
             let ring = Stroke::new(4.0, color::blue_soft());
-            let past_clip = painter.with_clip_rect(ui.clip_rect().expand(4.0));
+            let mut past_clip = painter.clone();
+            past_clip.set_clip_rect(ui.clip_rect().expand(4.0 + 1.0 / ui.pixels_per_point()));
             past_clip.circle_stroke(thumb, size::THUMB / 2.0 + 2.0, ring);
         }
         painter.circle_filled(thumb, size::THUMB / 2.0, ink);
@@ -2637,8 +2712,14 @@ impl Widget for SectionHeader<'_> {
             *self.open = !*self.open;
             response.mark_changed();
         }
-        response
-            .widget_info(|| WidgetInfo::selected(WidgetType::Button, true, *self.open, self.title));
+        response.widget_info(|| {
+            WidgetInfo::selected(
+                WidgetType::Button,
+                self.state != State::Disabled && response.enabled(),
+                *self.open,
+                self.title,
+            )
+        });
         let l = look(&response, self.state);
         let ink = if l.disabled {
             color::ink_4()
@@ -2655,7 +2736,10 @@ impl Widget for SectionHeader<'_> {
         paint_icon(ui.painter(), chevron, glyph, ink);
         let x = rect.left() + size::ICON + space::S4;
         let room = rect.right() - self.reserve - x;
-        let title = fit_text(ui, self.title, theme::panel_title(), ink, room);
+        let mut job =
+            LayoutJob::simple_singleline(self.title.to_owned(), theme::panel_title(), ink);
+        job.wrap = TextWrapping::truncate_at_width(room.max(0.0));
+        let title = ui.fonts_mut(|fonts| fonts.layout_job(job));
         let response = hover_full(response, &title);
         paint_left(ui, x, y, title, ink);
         response

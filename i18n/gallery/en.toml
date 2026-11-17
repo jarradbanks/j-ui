@@ -10,6 +10,7 @@ disabled = "Disabled"
 loading_error = "Loading / Error"
 
 [panel]
+components = "Components"
 widgets = "Widgets"
 effects = "Effects"
 text = "Text"
@@ -22,7 +23,7 @@ audio = "Audio"
 markers = "Markers"
 history = "History"
 captions = "Captions"
-overflow = "Tabs below 64px move into the chevron menu."
+overflow = "Tabs that do not fit move into the chevron menu."
 type_and_colour = "Type and Colour"
 
 # Row heads: the widget kinds.
@@ -50,6 +51,8 @@ slider = "Slider"
 keyframe = "Keyframe"
 
 [demo]
+no_matches = "No matching items"
+dismiss = "Dismiss"
 delete = "Delete"
 export = "Export"
 width_prefix = "W"
@@ -74,12 +77,12 @@ green = "Green"
 
 # The type scale, each line in its own style.
 [type]
-display = "Display 22"
-headline = "Headline 16"
-title = "Title 14"
-body_strong = "Body strong 12"
-body = "Body 12 · 0123456789 holds still"
-small = "Small 10 · shortcut hint"
+display = "Display 28"
+headline = "Headline 20"
+title = "Title 16"
+body_strong = "Body Strong 14"
+body = "Body 14, 0123456789 holds still"
+small = "Small 12, shortcut hint"
 
 [clip]
 video = "Video"
