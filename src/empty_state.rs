@@ -6,7 +6,7 @@ use crate::theme;
 use crate::tokens::{color, space};
 use crate::widgets::Button;
 
-/// An unframed 32px outline icon, a Title heading, Body help, and an optional existing
+/// An unframed 32px outline icon, a Title heading, optional Body help, and an optional
 /// action, 12px apart.
 /// Use only for empty content or no selection; loading and errors keep their own treatment.
 pub struct EmptyState<'a> {
@@ -81,7 +81,7 @@ impl<'a> EmptyState<'a> {
             ui.fonts_mut(|f| f.layout_job(job))
         };
         let title = layout(self.title, theme::title(), ink);
-        let help = layout(self.help, theme::body(), muted);
+        let help = (!self.help.is_empty()).then(|| layout(self.help, theme::body(), muted));
         let action_width = self.action.map_or(0.0, |(label, _)| {
             ui.painter()
                 .layout_no_wrap(label.into(), theme::body_strong(), Color32::WHITE)
@@ -90,12 +90,19 @@ impl<'a> EmptyState<'a> {
                 .ceil()
                 + 2.0 * (space::button_pad() + 1.0)
         });
+        let icon = ui.painter().layout_no_wrap(
+            self.icon.into(),
+            egui::FontId::new(32.0, theme::icon_font().family),
+            muted,
+        );
+        let icon_height = icon.mesh_bounds.height();
         let group_width = width;
-        let height = 32.0
+        let height = icon_height
             + space::gap()
             + title.size().y
-            + space::gap()
-            + help.size().y
+            + help
+                .as_ref()
+                .map_or(0.0, |help| space::gap() + help.size().y)
             + if self.action.is_some() {
                 space::gap() + crate::tokens::size::control()
             } else {
@@ -127,18 +134,14 @@ impl<'a> EmptyState<'a> {
                     vec2(group_width, height),
                 );
                 let center = content_rect.center().x;
-                let icon = ui.painter().layout_no_wrap(
-                    self.icon.into(),
-                    egui::FontId::new(32.0, theme::icon_font().family),
-                    muted,
-                );
                 ui.painter().galley(
-                    pos2(center, content_rect.top() + 16.0) - icon.mesh_bounds.center().to_vec2(),
+                    pos2(center, content_rect.top() + icon_height / 2.0)
+                        - icon.mesh_bounds.center().to_vec2(),
                     icon,
                     muted,
                 );
-                let mut y = content_rect.top() + 32.0 + space::gap();
-                for galley in [title, help] {
+                let mut y = content_rect.top() + icon_height + space::gap();
+                for galley in std::iter::once(title).chain(help) {
                     let rect = Rect::from_min_size(
                         pos2(center - width / 2.0, y),
                         vec2(width, galley.size().y),
